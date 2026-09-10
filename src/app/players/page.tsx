@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase/client";
+import { getSupabase } from "@/lib/supabase/client";
 import type { Player } from "@/types/tennis";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,8 @@ export default function PlayersPage() {
 
   useEffect(() => {
     async function loadPlayers() {
-      const { data } = await supabase
+      const db = getSupabase();
+      const { data } = await db
         .from("players")
         .select("*")
         .order("name");

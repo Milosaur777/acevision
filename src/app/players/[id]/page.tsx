@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase/client";
+import { getSupabase } from "@/lib/supabase/client";
 import type { Player, Match, PlayerNote } from "@/types/tennis";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,15 +21,16 @@ export default function PlayerDetailPage() {
 
   useEffect(() => {
     async function loadData() {
+      const db = getSupabase();
       const [playerRes, matchesRes, notesRes] = await Promise.all([
-        supabase.from("players").select("*").eq("id", playerId).single(),
-        supabase
+        db.from("players").select("*").eq("id", playerId).single(),
+        db
           .from("matches")
           .select("*")
           .or(`player1_id.eq.${playerId},player2_id.eq.${playerId}`)
           .order("tourney_date", { ascending: false })
           .limit(20),
-        supabase
+        getSupabase()
           .from("player_notes")
           .select("*")
           .eq("player_id", playerId)

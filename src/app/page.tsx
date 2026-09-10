@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase/client";
+import { getSupabase } from "@/lib/supabase/client";
 import type { Player, Prediction, Match } from "@/types/tennis";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,10 +16,11 @@ export default function HomePage() {
 
   useEffect(() => {
     async function loadData() {
+      const db = getSupabase();
       const [playersRes, predictionsRes, matchesRes] = await Promise.all([
-        supabase.from("players").select("*").order("ranking").limit(10),
-        supabase.from("predictions").select("*").order("created_at", { ascending: false }).limit(5),
-        supabase.from("matches").select("*").order("tourney_date", { ascending: false }).limit(5),
+        db.from("players").select("*").order("ranking").limit(10),
+        db.from("predictions").select("*").order("created_at", { ascending: false }).limit(5),
+        db.from("matches").select("*").order("tourney_date", { ascending: false }).limit(5),
       ]);
 
       setPlayers(playersRes.data ?? []);

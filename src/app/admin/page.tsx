@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase/client";
+import { getSupabase } from "@/lib/supabase/client";
 import type { Player, PlayerNote } from "@/types/tennis";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,8 @@ export default function AdminPage() {
 
   useEffect(() => {
     async function loadPlayers() {
-      const { data } = await supabase.from("players").select("*").order("name");
+      const db = getSupabase();
+      const { data } = await db.from("players").select("*").order("name");
       setPlayers(data ?? []);
       setLoading(false);
     }
@@ -54,7 +55,8 @@ export default function AdminPage() {
         setPlayStyle(player.play_style ?? "");
       }
 
-      const { data } = await supabase
+      const db = getSupabase();
+      const { data } = await db
         .from("player_notes")
         .select("*")
         .eq("player_id", selectedPlayerId)
@@ -72,7 +74,7 @@ export default function AdminPage() {
     if (!selectedPlayerId) return;
     setSaving(true);
 
-    await supabase
+    await getSupabase()
       .from("players")
       .update({
         play_style: playStyle,
@@ -88,7 +90,7 @@ export default function AdminPage() {
   async function addNote() {
     if (!selectedPlayerId || !newNote.trim()) return;
 
-    const { data } = await supabase
+    const { data } = await getSupabase()
       .from("player_notes")
       .insert({
         player_id: selectedPlayerId,
@@ -107,7 +109,7 @@ export default function AdminPage() {
   }
 
   async function deleteNote(noteId: string) {
-    await supabase.from("player_notes").delete().eq("id", noteId);
+    await getSupabase().from("player_notes").delete().eq("id", noteId);
     setNotes(notes.filter((n) => n.id !== noteId));
   }
 
