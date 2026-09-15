@@ -293,7 +293,7 @@ export default function HomePage() {
             </div>
             <div className="space-y-2">
               <Link
-                href="/admin"
+                href="/admin?tab=add-player"
                 className="flex items-center justify-between px-4 py-3 rounded-xl bg-primary/10 border border-primary/10 text-primary text-sm font-medium hover:bg-primary/15 transition-all group"
               >
                 <div className="flex items-center gap-2.5">

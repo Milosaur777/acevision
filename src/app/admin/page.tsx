@@ -9,8 +9,17 @@ import { cn } from "@/lib/utils";
 
 type Tab = "notes" | "add-player" | "add-match";
 
+function getInitialTab(): Tab {
+  if (typeof window === "undefined") return "add-player";
+  const param = new URLSearchParams(window.location.search).get("tab");
+  if (param === "notes" || param === "add-player" || param === "add-match") return param;
+  return "add-player";
+}
+
 export default function AdminPage() {
-  const [tab, setTab] = useState<Tab>("notes");
+  const [tab, setTab] = useState<Tab>("add-player");
+
+  useEffect(() => { setTab(getInitialTab()); }, []);
   const [players, setPlayers] = useState<Player[]>([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState("");
   const [notes, setNotes] = useState<PlayerNote[]>([]);
@@ -121,9 +130,9 @@ export default function AdminPage() {
   }
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-    { key: "notes", label: "Notes & Attributes", icon: <Save className="h-4 w-4" /> },
     { key: "add-player", label: "Add Player", icon: <UserPlus className="h-4 w-4" /> },
     { key: "add-match", label: "Add Match", icon: <Trophy className="h-4 w-4" /> },
+    { key: "notes", label: "Notes & Attributes", icon: <Save className="h-4 w-4" /> },
   ];
 
   const inputCls = "w-full glass px-4 py-3 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all";
