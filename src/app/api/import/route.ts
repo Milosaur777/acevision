@@ -93,8 +93,9 @@ export async function POST(request: Request) {
     // Upsert matches in batches
     let matchCount = 0;
     const matchBatch: Record<string, unknown>[] = [];
+    let skippedRows = 0;
     for (const row of rows) {
-      if (!row.winner_id || !row.loser_id) continue;
+      if (!row.winner_id || !row.loser_id) { skippedRows++; continue; }
       matchBatch.push({
         id: row.match_num && row.tourney_id ? `${row.tourney_id}-${row.match_num}` : `csv-${matchCount}-${Math.random().toString(36).slice(2, 8)}`,
         tourney_name: row.tourney_name || "",
@@ -125,6 +126,7 @@ export async function POST(request: Request) {
     }
     if (matchBatch.length > 0) {
       const { error } = await supabase.from("matches").upsert(matchBatch, { onConflict: "id" });
+      if (error) console.error("Match upsert error:", error.message, error.details);
       if (!error) matchCount += matchBatch.length;
     }
 
@@ -132,6 +134,7 @@ export async function POST(request: Request) {
       success: true,
       count: `${playerCount} players, ${matchCount} matches`,
       message: `Imported ${playerCount} players and ${matchCount} matches from ${filename}`,
+      debug: { totalRows: rows.length, skippedRows, matchCount },
     });
   } catch (err) {
     return NextResponse.json({ error: `Failed to parse CSV: ${err}` }, { status: 500 });
