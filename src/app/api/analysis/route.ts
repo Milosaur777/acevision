@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   // Try n8n webhook
   if (N8N_BASE) {
     try {
-      const res = await fetch(`${N8N_BASE}/tennis-predict`, {
+      const res = await fetch(`${N8N_BASE}/tennis-analysis`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

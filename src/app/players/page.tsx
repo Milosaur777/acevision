@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabase/client";
 import type { Player } from "@/types/tennis";
 import { Search } from "lucide-react";
 
-export default function PlayersPage() {
+function PlayersContent() {
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get("q") ?? "";
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialQuery);
 
   useEffect(() => {
     async function loadPlayers() {
@@ -109,5 +112,17 @@ export default function PlayersPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function PlayersPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-10 h-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      </div>
+    }>
+      <PlayersContent />
+    </Suspense>
   );
 }

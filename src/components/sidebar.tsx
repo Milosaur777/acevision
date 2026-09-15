@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import { Home, Users, BarChart3, Settings, Upload, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +26,15 @@ const navSections = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/players?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  }
 
   return (
     <>
@@ -42,11 +52,17 @@ export function Sidebar() {
 
         {/* Search */}
         <div className="px-4 py-3">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-sidebar-accent text-muted-foreground text-sm">
+          <form onSubmit={handleSearch} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-sidebar-accent text-muted-foreground text-sm">
             <Search className="h-4 w-4" />
-            <span>Search...</span>
-            <kbd className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-background/50 border border-sidebar-border">⌘K</kbd>
-          </div>
+            <input
+              type="text"
+              placeholder="Search players..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-transparent outline-none flex-1 text-sm placeholder:text-muted-foreground"
+            />
+            <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-background/50 border border-sidebar-border">⌘K</kbd>
+          </form>
         </div>
 
         {/* Nav sections */}
