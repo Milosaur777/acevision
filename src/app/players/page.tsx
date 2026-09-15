@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getSupabase } from "@/lib/supabase/client";
 import type { Player } from "@/types/tennis";
 import { Search } from "lucide-react";
+import { CountryFlag, HandEmoji } from "@/components/country-flag";
 
 function PlayersContent() {
   const searchParams = useSearchParams();
@@ -88,13 +89,26 @@ function PlayersContent() {
               className="glass stat-card p-5 group"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0 group-hover:bg-primary/20 group-hover:shadow-[0_0_15px_rgba(163,230,53,0.1)] transition-all">
-                  {player.name.charAt(0)}
-                </div>
+                {"avatar_url" in player && (player as any).avatar_url ? (
+                  <img
+                    src={(player as any).avatar_url}
+                    alt={player.name}
+                    className="w-10 h-10 rounded-full object-cover border border-primary/10 shrink-0 group-hover:shadow-[0_0_15px_rgba(163,230,53,0.1)] transition-all"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0 group-hover:bg-primary/20 group-hover:shadow-[0_0_15px_rgba(163,230,53,0.1)] transition-all">
+                    {player.name.charAt(0)}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate text-sm">{player.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {player.country_code} · {player.hand === "L" ? "Left" : "Right"}
+                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <CountryFlag code={player.country_code} />
+                    <span>{player.country_code}</span>
+                    <span>·</span>
+                    <HandEmoji hand={player.hand} />
+                    <span>{player.hand === "L" ? "Left" : "Right"}</span>
                   </p>
                 </div>
               </div>
