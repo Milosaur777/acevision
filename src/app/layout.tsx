@@ -19,7 +19,11 @@ export const metadata: Metadata = {
   description: "AI-powered tennis match analysis, predictions, and player insights",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icon.avif",
+    icon: [
+      { url: "/favicon.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
   },
 };
 
