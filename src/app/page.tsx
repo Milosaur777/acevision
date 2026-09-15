@@ -129,9 +129,15 @@ export default function HomePage() {
             <span className="text-primary/70 italic">Smarter tennis through data.</span>
           </p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground/90 glass px-4 py-2 rounded-xl">
-          <span className="text-xs">📅</span>
-          <span>{new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
+        {/* Logo on mobile, date on desktop */}
+        <div className="flex items-center gap-2">
+          <div className="lg:hidden">
+            <img src="/favicon.avif" alt="AceVision" className="w-10 h-10 rounded-lg object-cover" />
+          </div>
+          <div className="hidden lg:flex items-center gap-2 text-sm text-muted-foreground/90 glass px-4 py-2 rounded-xl">
+            <span className="text-xs">📅</span>
+            <span>{new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
+          </div>
         </div>
       </div>
 

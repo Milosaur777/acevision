@@ -33,6 +33,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`dark ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <link rel="icon" type="image/png" href="/favicon.png" />
+      </head>
       <body className="min-h-screen bg-background text-foreground">
         <div className="bg-scene" aria-hidden="true" />
         <TooltipProvider>
