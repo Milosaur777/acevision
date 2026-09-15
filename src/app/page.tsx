@@ -6,10 +6,16 @@ import { getSupabase } from "@/lib/supabase/client";
 import type { Player, Prediction, Match } from "@/types/tennis";
 import { Users, Target, Trophy, Zap, ArrowRight, TrendingUp, Activity } from "lucide-react";
 
-function countryFlag(code: string): string {
-  if (!code || code.length !== 2) return "🏳️";
-  const c = code.toUpperCase();
-  return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65);
+function CountryFlag({ code }: { code: string }) {
+  if (!code || code.length !== 2) return <span className="text-muted-foreground/40">—</span>;
+  return (
+    <img
+      src={`https://flagcdn.com/w40/${code.toLowerCase()}.png`}
+      alt={code}
+      className="w-5 h-[14px] rounded-[2px] object-cover shrink-0"
+      loading="lazy"
+    />
+  );
 }
 
 function Sparkline({ data, color = "var(--color-primary)" }: { data: number[]; color?: string }) {
@@ -184,40 +190,39 @@ export default function HomePage() {
               </Link>
             </div>
           ) : (
-            <div>
-              {/* Table header */}
-              <div className="grid grid-cols-[36px_1fr_120px_130px] gap-2 px-6 py-2.5 text-[11px] font-medium text-muted-foreground/40 uppercase tracking-wider border-b border-white/[0.03]">
-                <span>#</span>
-                <span>Player</span>
-                <span>Country</span>
-                <span>Handedness</span>
-              </div>
-              {/* Table rows */}
-              <div className="divide-y divide-white/[0.03]">
-                {players.slice(0, 10).map((player, i) => (
-                  <Link
-                    key={player.id}
-                    href={`/players/${player.id}`}
-                    className="grid grid-cols-[36px_1fr_120px_130px] gap-2 items-center px-6 py-3 table-row group"
-                  >
-                    <span className="text-sm font-mono text-muted-foreground/40">{i + 1}</span>
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0 group-hover:bg-primary/20 transition-all">
-                        {player.name.charAt(0)}
-                      </div>
-                      <span className="font-medium text-sm truncate">{player.name}</span>
-                    </div>
-                    <span className="text-sm text-muted-foreground/60 flex items-center gap-1.5">
-                      <span className="text-base">{countryFlag(player.country_code)}</span>
-                      <span>{player.country_code}</span>
-                    </span>
-                    <span className="text-sm text-muted-foreground/60 flex items-center gap-1.5">
-                      <span>{player.hand === "L" ? "🤚" : "✋"}</span>
-                      <span>{player.hand === "L" ? "Left" : "Right"}</span>
-                    </span>
-                  </Link>
-                ))}
-              </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-[11px] font-medium text-muted-foreground/40 uppercase tracking-wider border-b border-white/[0.03]">
+                    <th className="text-left px-6 py-2.5 w-10">#</th>
+                    <th className="text-left px-4 py-2.5">Player</th>
+                    <th className="text-left px-4 py-2.5 w-36">Country</th>
+                    <th className="text-left px-4 py-2.5 w-36">Handedness</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.03]">
+                  {players.slice(0, 10).map((player, i) => (
+                    <tr key={player.id} className="table-row group">
+                      <td className="px-6 py-3 font-mono text-muted-foreground/40">{i + 1}</td>
+                      <td className="px-4 py-3">
+                        <Link href={`/players/${player.id}`} className="flex items-center gap-3 group/link">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0 group-hover/link:bg-primary/20 transition-all">
+                            {player.name.charAt(0)}
+                          </div>
+                          <span className="font-medium truncate group-hover/link:text-primary transition-colors">{player.name}</span>
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <CountryFlag code={player.country_code} />
+                          <span className="text-muted-foreground/60">{player.country_code}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground/60">{player.hand === "L" ? "Left-handed" : "Right-handed"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
