@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     });
 
     // Extract unique players
-    const playerMap = new Map<string, { name: string; country: string; hand: string }>();
+    const playerMap = new Map<string, { name: string; country: string; hand: string; rank: number | null; height: number | null; age: number | null }>();
 
     for (const row of rows) {
       const winnerName = row.winner_name;
@@ -74,9 +74,15 @@ export async function POST(request: Request) {
       const loserHand = row.loser_hand || "R";
       const winnerId = row.winner_id || "";
       const loserId = row.loser_id || "";
+      const winnerRank = parseInt(row.winner_rank) || null;
+      const loserRank = parseInt(row.loser_rank) || null;
+      const winnerHt = parseInt(row.winner_ht) || null;
+      const loserHt = parseInt(row.loser_ht) || null;
+      const winnerAge = parseFloat(row.winner_age) || null;
+      const loserAge = parseFloat(row.loser_age) || null;
 
-      if (winnerId && winnerName) playerMap.set(winnerId, { name: winnerName, country: winnerCountry, hand: winnerHand });
-      if (loserId && loserName) playerMap.set(loserId, { name: loserName, country: loserCountry, hand: loserHand });
+      if (winnerId && winnerName) playerMap.set(winnerId, { name: winnerName, country: winnerCountry, hand: winnerHand, rank: winnerRank, height: winnerHt, age: winnerAge });
+      if (loserId && loserName) playerMap.set(loserId, { name: loserName, country: loserCountry, hand: loserHand, rank: loserRank, height: loserHt, age: loserAge });
     }
 
     // Upsert players in batches
@@ -85,6 +91,7 @@ export async function POST(request: Request) {
     for (let i = 0; i < playerEntries.length; i += 50) {
       const batch = playerEntries.slice(i, i + 50).map(([id, p]) => ({
         id, name: p.name, country_code: p.country, hand: p.hand === "L" ? "L" : "R",
+        ranking: p.rank, height: p.height, age: p.age,
       }));
       const { error } = await supabase.from("players").upsert(batch, { onConflict: "id" });
       if (!error) playerCount += batch.length;
@@ -106,6 +113,24 @@ export async function POST(request: Request) {
         winner_id: row.winner_id,
         score: row.score || "",
         minutes: parseInt(row.minutes) || null,
+        p1_ace: parseInt(row.w_ace) || 0,
+        p1_df: parseInt(row.w_df) || 0,
+        p1_svpt: parseInt(row.w_svpt) || 0,
+        p1_1stin: parseInt(row.w_1stIn) || 0,
+        p1_1stwon: parseInt(row.w_1stWon) || 0,
+        p1_2ndwon: parseInt(row.w_2ndWon) || 0,
+        p1_svgms: parseInt(row.w_SvGms) || 0,
+        p1_bpsaved: parseInt(row.w_bpSaved) || 0,
+        p1_bpfaced: parseInt(row.w_bpFaced) || 0,
+        p2_ace: parseInt(row.l_ace) || 0,
+        p2_df: parseInt(row.l_df) || 0,
+        p2_svpt: parseInt(row.l_svpt) || 0,
+        p2_1stin: parseInt(row.l_1stIn) || 0,
+        p2_1stwon: parseInt(row.l_1stWon) || 0,
+        p2_2ndwon: parseInt(row.l_2ndWon) || 0,
+        p2_svgms: parseInt(row.l_SvGms) || 0,
+        p2_bpsaved: parseInt(row.l_bpSaved) || 0,
+        p2_bpfaced: parseInt(row.l_bpFaced) || 0,
       });
       if (matchBatch.length >= 50) {
         const { error } = await supabase.from("matches").upsert(matchBatch, { onConflict: "id" });
