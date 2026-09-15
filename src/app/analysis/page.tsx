@@ -3,11 +3,7 @@
 import { useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase/client";
 import type { Player } from "@/types/tennis";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Zap, Target, Shield, TrendingUp } from "lucide-react";
+import { Zap, Target, TrendingUp, Swords } from "lucide-react";
 
 interface AnalysisResult {
   predicted_winner_id: string;
@@ -28,10 +24,7 @@ export default function AnalysisPage() {
   useEffect(() => {
     async function loadPlayers() {
       const db = getSupabase();
-      const { data } = await db
-        .from("players")
-        .select("*")
-        .order("name");
+      const { data } = await db.from("players").select("*").order("name");
       setPlayers(data ?? []);
     }
     loadPlayers();
@@ -41,16 +34,11 @@ export default function AnalysisPage() {
     if (!player1Id || !player2Id || player1Id === player2Id) return;
     setLoading(true);
     setResult(null);
-
     try {
       const res = await fetch("/api/analysis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          player1_id: player1Id,
-          player2_id: player2Id,
-          surface,
-        }),
+        body: JSON.stringify({ player1_id: player1Id, player2_id: player2Id, surface }),
       });
       const data = await res.json();
       setResult(data);
@@ -71,130 +59,97 @@ export default function AnalysisPage() {
   const player2 = players.find((p) => p.id === player2Id);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold">Match Analysis</h1>
-        <p className="text-muted-foreground text-sm">
-          Compare two players and get AI-powered predictions
-        </p>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Match Analysis</h1>
+        <p className="text-muted-foreground text-sm mt-0.5">Compare two players and get AI-powered predictions</p>
       </div>
 
       {/* Player Selection */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Player 1</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <select
-              value={player1Id}
-              onChange={(e) => setPlayer1Id(e.target.value)}
-              className="w-full bg-input border border-border rounded-md px-3 py-2 text-sm"
-            >
+      <div className="bg-card rounded-2xl border border-border p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="text-xs text-muted-foreground mb-1.5 block">Player 1</label>
+            <select value={player1Id} onChange={(e) => setPlayer1Id(e.target.value)}
+              className="w-full bg-input border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all">
               <option value="">Select player...</option>
-              {players.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.country_code})
-                </option>
-              ))}
+              {players.map((p) => (<option key={p.id} value={p.id}>{p.name} ({p.country_code})</option>))}
             </select>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">Player 2</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <select
-              value={player2Id}
-              onChange={(e) => setPlayer2Id(e.target.value)}
-              className="w-full bg-input border border-border rounded-md px-3 py-2 text-sm"
-            >
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1.5 block">Player 2</label>
+            <select value={player2Id} onChange={(e) => setPlayer2Id(e.target.value)}
+              className="w-full bg-input border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all">
               <option value="">Select player...</option>
-              {players.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.country_code})
-                </option>
-              ))}
+              {players.map((p) => (<option key={p.id} value={p.id}>{p.name} ({p.country_code})</option>))}
             </select>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Surface & Analyze */}
-      <div className="flex items-end gap-3 flex-wrap">
-        <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">Surface</label>
-          <select
-            value={surface}
-            onChange={(e) => setSurface(e.target.value)}
-            className="bg-input border border-border rounded-md px-3 py-2 text-sm"
-          >
-            <option value="Hard">Hard</option>
-            <option value="Clay">Clay</option>
-            <option value="Grass">Grass</option>
-            <option value="Indoor">Indoor</option>
-          </select>
+          </div>
         </div>
-        <Button
-          onClick={runAnalysis}
-          disabled={!player1Id || !player2Id || player1Id === player2Id || loading}
-        >
-          {loading ? "Analyzing..." : "Run Analysis"}
-        </Button>
+        <div className="flex items-end gap-3 flex-wrap">
+          <div>
+            <label className="text-xs text-muted-foreground mb-1.5 block">Surface</label>
+            <select value={surface} onChange={(e) => setSurface(e.target.value)}
+              className="bg-input border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all">
+              <option value="Hard">Hard</option>
+              <option value="Clay">Clay</option>
+              <option value="Grass">Grass</option>
+              <option value="Indoor">Indoor</option>
+            </select>
+          </div>
+          <button onClick={runAnalysis}
+            disabled={!player1Id || !player2Id || player1Id === player2Id || loading}
+            className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+            {loading ? (
+              <><div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> Analyzing...</>
+            ) : (
+              <><Swords className="h-4 w-4" /> Run Analysis</>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Results */}
       {result && player1 && player2 && (
         <div className="space-y-4">
           {/* Winner Prediction */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                Prediction
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="font-medium">
+          <div className="bg-card rounded-2xl border border-border p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              <h2 className="font-semibold">Prediction</h2>
+            </div>
+            <div className="flex items-center gap-4 mb-4">
+              <div className="flex-1">
+                <p className="text-2xl font-bold">
                   {players.find((p) => p.id === result.predicted_winner_id)?.name ?? "—"}
-                </span>
-                <Badge className="text-lg px-3 py-1">
-                  {Math.round(result.confidence * 100)}%
-                </Badge>
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">{result.reasoning}</p>
               </div>
-              <Progress value={result.confidence * 100} className="h-2" />
-              <p className="text-sm text-muted-foreground">{result.reasoning}</p>
-            </CardContent>
-          </Card>
+              <div className="text-right">
+                <p className="text-3xl font-bold text-primary">{Math.round(result.confidence * 100)}%</p>
+                <p className="text-[11px] text-muted-foreground">confidence</p>
+              </div>
+            </div>
+            <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+              <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${result.confidence * 100}%` }} />
+            </div>
+          </div>
 
           {/* Tactics */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-primary" />
-                  {player1.name} — Tactics
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{result.tactics_player1}</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Target className="h-4 w-4 text-primary" />
-                  {player2.name} — Tactics
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{result.tactics_player2}</p>
-              </CardContent>
-            </Card>
+            <div className="bg-card rounded-2xl border border-border p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Zap className="h-4 w-4 text-primary" />
+                <h3 className="font-medium text-sm">{player1.name}</h3>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">{result.tactics_player1}</p>
+            </div>
+            <div className="bg-card rounded-2xl border border-border p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Target className="h-4 w-4 text-cyan-400" />
+                <h3 className="font-medium text-sm">{player2.name}</h3>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">{result.tactics_player2}</p>
+            </div>
           </div>
         </div>
       )}
