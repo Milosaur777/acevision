@@ -132,7 +132,7 @@ export default function HomePage() {
         {/* Logo on mobile, date on desktop */}
         <div className="flex items-center gap-2">
           <div className="lg:hidden">
-            <img src="/logo.avif" alt="AceVision" className="w-10 h-10 rounded-lg object-cover" />
+            <img src="/logo.avif" alt="AceVision" className="h-10 w-auto rounded-lg object-contain" />
           </div>
           <div className="hidden lg:flex items-center gap-2 text-sm text-muted-foreground/90 glass px-4 py-2 rounded-xl">
             <span className="text-xs">📅</span>
