@@ -18,6 +18,9 @@ export const metadata: Metadata = {
   title: "AceVision — Tennis AI Dashboard",
   description: "AI-powered tennis match analysis, predictions, and player insights",
   manifest: "/manifest.json",
+  icons: {
+    icon: { url: "/logo-icon.png", type: "image/png" },
+  },
 };
 
 export const viewport: Viewport = {
@@ -33,9 +36,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`dark ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <head>
-        <link rel="icon" type="image/png" href="/favicon.png?v=2" />
-      </head>
       <body className="min-h-screen bg-background text-foreground">
         <div className="bg-scene" aria-hidden="true" />
         <TooltipProvider>
