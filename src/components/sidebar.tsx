@@ -42,9 +42,7 @@ export function Sidebar() {
       <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-[260px] flex-col glass-sidebar z-40">
         {/* Logo */}
         <div className="px-5 py-5 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center border border-primary/20">
-            <span className="text-sm font-bold text-primary tracking-tight">AV</span>
-          </div>
+          <img src="/logo.avif" alt="AceVision" className="w-9 h-9 rounded-xl object-contain" />
           <div>
             <span className="font-bold text-[15px] text-foreground tracking-tight">AceVision</span>
             <p className="text-[10px] text-muted-foreground tracking-widest uppercase">AI Tennis Intelligence</p>

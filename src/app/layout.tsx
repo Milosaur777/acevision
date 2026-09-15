@@ -18,6 +18,9 @@ export const metadata: Metadata = {
   title: "AceVision — Tennis AI Dashboard",
   description: "AI-powered tennis match analysis, predictions, and player insights",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.avif",
+  },
 };
 
 export const viewport: Viewport = {
