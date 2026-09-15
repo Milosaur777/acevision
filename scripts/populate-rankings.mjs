@@ -52,18 +52,17 @@ async function populateRankings() {
     .map((p) => ({ id: p.id, wins: winCounts.get(p.id) || 0 }))
     .sort((a, b) => b.wins - a.wins);
 
-  // 4. Batch update rankings
+  // 4. Batch update rankings (individual updates to avoid null name constraint)
   let updated = 0;
   for (let i = 0; i < ranked.length; i += 50) {
-    const batch = ranked.slice(i, i + 50).map((p, j) => ({
-      id: p.id,
-      ranking: i + j + 1,
-    }));
-    const { error } = await supabase
-      .from("players")
-      .upsert(batch, { onConflict: "id" });
-    if (!error) updated += batch.length;
-    else console.error("Update batch error:", error.message);
+    const batch = ranked.slice(i, i + 50);
+    const promises = batch.map((p, j) =>
+      supabase.from("players").update({ ranking: i + j + 1 }).eq("id", p.id)
+    );
+    const results = await Promise.all(promises);
+    const errors = results.filter((r) => r.error);
+    updated += batch.length - errors.length;
+    if (errors.length > 0) console.error("Batch errors:", errors[0].error.message);
   }
 
   console.log(`\nDone: ${updated} players ranked`);
