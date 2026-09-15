@@ -126,8 +126,17 @@ export async function POST(request: Request) {
     }
     if (matchBatch.length > 0) {
       const { error } = await supabase.from("matches").upsert(matchBatch, { onConflict: "id" });
-      if (error) console.error("Match upsert error:", error.message, error.details);
-      if (!error) matchCount += matchBatch.length;
+      if (error) {
+        console.error("Match upsert error:", error.message, error.details);
+        return NextResponse.json({
+          success: false,
+          error: `Match upsert failed: ${error.message}`,
+          details: error.details,
+          hint: error.hint,
+          debug: { totalRows: rows.length, skippedRows, batchSample: matchBatch[0] },
+        }, { status: 500 });
+      }
+      matchCount += matchBatch.length;
     }
 
     return NextResponse.json({
