@@ -116,7 +116,7 @@ export function Sidebar() {
       </aside>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-sidebar border-t border-white/[0.04]">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-white/[0.04]" style={{ background: "rgba(5, 8, 5, 0.92)", backdropFilter: "blur(40px) saturate(1.4)", WebkitBackdropFilter: "blur(40px) saturate(1.4)" }}>
         <div className="flex items-center justify-around py-2 px-2">
           {navSections.flatMap((s) => s.items).map((item) => {
             const Icon = item.icon;
