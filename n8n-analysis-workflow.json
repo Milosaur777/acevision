@@ -1,0 +1,72 @@
+{
+  "name": "AceVision AI Analysis",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tennis-analysis",
+        "responseMode": "responseNode"
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body;\nconst { player1, player2, surface, matchData } = body;\nconst prompt = `You are a tennis analyst AI. Analyze this match:\n\nPlayer 1: ${player1?.name || 'Unknown'} (${player1?.country || ''})\n  - Play style: ${player1?.play_style || 'Unknown'}\n  - Strengths: ${player1?.strengths?.join(', ') || 'Unknown'}\n  - Weaknesses: ${player1?.weaknesses?.join(', ') || 'Unknown'}\n  - Best surfaces: ${player1?.best_surfaces?.join(', ') || 'Unknown'}\n  - Recent matches: ${JSON.stringify(player1?.recent_matches || [])}\n\nPlayer 2: ${player2?.name || 'Unknown'} (${player2?.country || ''})\n  - Play style: ${player2?.play_style || 'Unknown'}\n  - Strengths: ${player2?.strengths?.join(', ') || 'Unknown'}\n  - Weaknesses: ${player2?.weaknesses?.join(', ') || 'Unknown'}\n  - Best surfaces: ${player2?.best_surfaces?.join(', ') || 'Unknown'}\n  - Recent matches: ${JSON.stringify(player2?.recent_matches || [])}\n\nSurface: ${surface || 'Unknown'}\n\nProvide:\n1. Predicted winner (player name)\n2. Confidence (0.0-1.0)\n3. Key reasoning (2-3 sentences)\n4. Tactics for Player 1\n5. Tactics for Player 2\n\nReturn as JSON: { predicted_winner, confidence, reasoning, tactics_player1, tactics_player2 }`;\nreturn [{ json: { prompt } }];"
+      },
+      "name": "Build Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{ $env.OPENROUTER_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'google/gemini-2.0-flash-001', messages: [{ role: 'system', content: 'You are a tennis analyst. Return valid JSON only.' }, { role: 'user', content: $json.prompt }], temperature: 0.7, max_tokens: 1000 }) }}"
+      },
+      "name": "Call Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst content = response.choices?.[0]?.message?.content || '';\ntry {\n  const parsed = JSON.parse(content.match(/\\{[\\s\\S]*\\}/)?.[0] || content);\n  return [{ json: { success: true, ...parsed } }];\n} catch (e) {\n  return [{ json: { success: false, error: 'Failed to parse AI response', raw: content } }];\n}"
+      },
+      "name": "Parse Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}"
+      },
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Build Prompt", "type": "main", "index": 0 }]] },
+    "Build Prompt": { "main": [[{ "node": "Call Gemini", "type": "main", "index": 0 }]] },
+    "Call Gemini": { "main": [[{ "node": "Parse Response", "type": "main", "index": 0 }]] },
+    "Parse Response": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "active": true
+}

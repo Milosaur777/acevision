@@ -3,7 +3,15 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, Check, AlertCircle } from "lucide-react";
+import { Upload, FileText, Check, AlertCircle, ExternalLink, Download } from "lucide-react";
+
+const CSV_SOURCES = [
+  { label: "ATP Matches 2024", url: "https://raw.githubusercontent.com/JeffSackmann/tennis_atp/master/atp_matches_2024.csv" },
+  { label: "ATP Matches 2023", url: "https://raw.githubusercontent.com/JeffSackmann/tennis_atp/master/atp_matches_2023.csv" },
+  { label: "ATP Matches 2022", url: "https://raw.githubusercontent.com/JeffSackmann/tennis_atp/master/atp_matches_2022.csv" },
+  { label: "WTA Matches 2024", url: "https://raw.githubusercontent.com/JeffSackmann/tennis_wta/master/wta_matches_2024.csv" },
+  { label: "WTA Matches 2023", url: "https://raw.githubusercontent.com/JeffSackmann/tennis_wta/master/wta_matches_2023.csv" },
+];
 
 export default function ImportPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -16,14 +24,11 @@ export default function ImportPage() {
     if (!selected) return;
     setFile(selected);
     setResult(null);
-
-    // Preview first 5 rows
     const reader = new FileReader();
     reader.onload = (event) => {
       const text = event.target?.result as string;
       const lines = text.split("\n").slice(0, 6);
-      const rows = lines.map((line) => line.split(","));
-      setPreview(rows);
+      setPreview(lines.map((line) => line.split(",")));
     };
     reader.readAsText(selected);
   }
@@ -31,7 +36,6 @@ export default function ImportPage() {
   async function handleImport() {
     if (!file) return;
     setImporting(true);
-
     try {
       const text = await file.text();
       const res = await fetch("/api/import", {
@@ -42,41 +46,34 @@ export default function ImportPage() {
       const data = await res.json();
       setResult({
         success: res.ok,
-        message: res.ok
-          ? `Successfully imported ${data.count ?? "data"} from ${file.name}`
-          : data.error ?? "Import failed",
+        message: res.ok ? `Imported ${data.count ?? "data"} from ${file.name}` : data.error ?? "Import failed",
       });
     } catch {
-      setResult({
-        success: false,
-        message: "Failed to connect to import endpoint. Check n8n configuration.",
-      });
+      setResult({ success: false, message: "Import failed. Check console." });
     } finally {
       setImporting(false);
     }
   }
 
-  function triggerN8nImport() {
+  async function downloadAndImport(source: { label: string; url: string }) {
     setImporting(true);
-    fetch("/api/import", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ trigger: "n8n-sync" }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setResult({
-          success: true,
-          message: data.message ?? "n8n import triggered successfully",
-        });
-      })
-      .catch(() => {
-        setResult({
-          success: false,
-          message: "Failed to trigger n8n import. Check n8n webhook configuration.",
-        });
-      })
-      .finally(() => setImporting(false));
+    setResult(null);
+    try {
+      const importRes = await fetch("/api/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: source.label, url: source.url }),
+      });
+      const data = await importRes.json();
+      setResult({
+        success: importRes.ok,
+        message: importRes.ok ? `Imported ${data.count ?? "data"} from ${source.label}` : data.error ?? "Import failed",
+      });
+    } catch (err) {
+      setResult({ success: false, message: `Failed: ${err}` });
+    } finally {
+      setImporting(false);
+    }
   }
 
   return (
@@ -84,26 +81,46 @@ export default function ImportPage() {
       <div className="space-y-1">
         <h1 className="text-2xl font-bold">Import Data</h1>
         <p className="text-muted-foreground text-sm">
-          Import ATP/WTA match data from CSV files or trigger automatic sync
+          Import ATP/WTA match data from CSV files
         </p>
       </div>
 
-      {/* Automatic Import */}
+      {/* Quick Import from Jeff Sackmann */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
-            Automatic Sync
+            <Download className="h-5 w-5 text-primary" />
+            Quick Import
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Trigger an automatic import from Jeff Sackmann&apos;s ATP/WTA database via n8n.
-            This will fetch the latest match data and update your Supabase database.
+            One-click import from Jeff Sackmann&apos;s ATP/WTA database on GitHub.
           </p>
-          <Button onClick={triggerN8nImport} disabled={importing}>
-            {importing ? "Syncing..." : "Sync from Database"}
-          </Button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {CSV_SOURCES.map((source) => (
+              <Button
+                key={source.url}
+                variant="outline"
+                size="sm"
+                disabled={importing}
+                onClick={() => downloadAndImport(source)}
+                className="justify-start text-xs"
+              >
+                <Download className="h-3 w-3 mr-2 shrink-0" />
+                {source.label}
+              </Button>
+            ))}
+          </div>
+          <a
+            href="https://github.com/JeffSackmann/tennis_atp/tree/master"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ExternalLink className="h-3 w-3" />
+            More CSV files on GitHub
+          </a>
         </CardContent>
       </Card>
 
@@ -117,45 +134,28 @@ export default function ImportPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Upload a CSV file with match data (Jeff Sackmann format).
+            Upload a CSV file in Jeff Sackmann format.
           </p>
-
           <div className="flex items-center gap-3">
             <label className="flex-1">
               <div className="flex items-center justify-center gap-2 border-2 border-dashed border-border rounded-lg p-4 cursor-pointer hover:border-primary/50 transition-colors">
                 <Upload className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">
-                  {file ? file.name : "Choose CSV file..."}
-                </span>
+                <span className="text-sm text-muted-foreground">{file ? file.name : "Choose CSV file..."}</span>
               </div>
-              <input
-                type="file"
-                accept=".csv"
-                onChange={handleFileChange}
-                className="hidden"
-              />
+              <input type="file" accept=".csv" onChange={handleFileChange} className="hidden" />
             </label>
             <Button onClick={handleImport} disabled={!file || importing}>
               {importing ? "Importing..." : "Import"}
             </Button>
           </div>
-
-          {/* Preview */}
           {preview.length > 0 && (
             <div className="overflow-x-auto">
-              <p className="text-xs text-muted-foreground mb-2">
-                Preview (first 5 rows):
-              </p>
+              <p className="text-xs text-muted-foreground mb-2">Preview (first 5 rows):</p>
               <table className="w-full text-xs">
                 <thead>
                   <tr>
                     {preview[0]?.slice(0, 8).map((col, i) => (
-                      <th
-                        key={i}
-                        className="text-left p-1 border-b border-border font-medium text-muted-foreground"
-                      >
-                        {col}
-                      </th>
+                      <th key={i} className="text-left p-1 border-b border-border font-medium text-muted-foreground">{col}</th>
                     ))}
                   </tr>
                 </thead>
@@ -163,9 +163,7 @@ export default function ImportPage() {
                   {preview.slice(1).map((row, i) => (
                     <tr key={i}>
                       {row.slice(0, 8).map((cell, j) => (
-                        <td key={j} className="p-1 border-b border-border">
-                          {cell}
-                        </td>
+                        <td key={j} className="p-1 border-b border-border">{cell}</td>
                       ))}
                     </tr>
                   ))}
@@ -181,11 +179,7 @@ export default function ImportPage() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              {result.success ? (
-                <Check className="h-5 w-5 text-primary" />
-              ) : (
-                <AlertCircle className="h-5 w-5 text-destructive" />
-              )}
+              {result.success ? <Check className="h-5 w-5 text-primary" /> : <AlertCircle className="h-5 w-5 text-destructive" />}
               <p className="text-sm">{result.message}</p>
             </div>
           </CardContent>

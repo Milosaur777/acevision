@@ -1,0 +1,62 @@
+{
+  "name": "AceVision Tennis Import",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tennis-import",
+        "responseMode": "responseNode"
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body;\nconst url = body.url || 'https://raw.githubusercontent.com/JeffSackmann/tennis_atp/master/atp_matches_2024.csv';\nreturn [{ json: { url } }];"
+      },
+      "name": "Parse Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "name": "Fetch CSV",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.data;\nconst lines = text.split('\\n').filter(l => l.trim());\nif (lines.length < 2) return [{ json: { error: 'CSV too short' } }];\nconst headers = lines[0].split(',').map(h => h.trim());\nconst rows = lines.slice(1).map(line => {\n  const vals = line.split(',');\n  const row = {};\n  headers.forEach((h, i) => { row[h] = (vals[i] || '').trim(); });\n  return row;\n});\nconst playerMap = new Map();\nfor (const row of rows) {\n  if (row.winner_id && row.winner_name) playerMap.set(row.winner_id, { name: row.winner_name, country: row.winner_ioc || '', hand: row.winner_hand || 'R' });\n  if (row.loser_id && row.loser_name) playerMap.set(row.loser_id, { name: row.loser_name, country: row.loser_ioc || '', hand: row.loser_hand || 'R' });\n}\nreturn [{ json: { players: Object.fromEntries(playerMap), rows: rows.length, playerCount: playerMap.size } }];"
+      },
+      "name": "Parse CSV",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, players: $json.playerCount, rows: $json.rows }) }}"
+      },
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Parse Request", "type": "main", "index": 0 }]] },
+    "Parse Request": { "main": [[{ "node": "Fetch CSV", "type": "main", "index": 0 }]] },
+    "Fetch CSV": { "main": [[{ "node": "Parse CSV", "type": "main", "index": 0 }]] },
+    "Parse CSV": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "active": true
+}
