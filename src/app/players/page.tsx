@@ -14,6 +14,7 @@ function PlayersContent() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(initialQuery);
+  const [countryFilter, setCountryFilter] = useState("");
 
   useEffect(() => {
     async function loadPlayers() {
@@ -27,9 +28,12 @@ function PlayersContent() {
 
   const filtered = players.filter(
     (p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.country_code.toLowerCase().includes(search.toLowerCase())
+      (p.name.toLowerCase().includes(search.toLowerCase()) ||
+       p.country_code.toLowerCase().includes(search.toLowerCase())) &&
+      (!countryFilter || p.country_code.toLowerCase().includes(countryFilter.toLowerCase()))
   );
+
+  const uniqueCountries = [...new Set(players.map((p) => p.country_code).filter(Boolean))].sort();
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -52,6 +56,26 @@ function PlayersContent() {
           onChange={(e) => setSearch(e.target.value)}
           className="w-full glass px-10 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30 transition-all"
         />
+      </div>
+
+      {/* Country filter */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="Filter by country..."
+          value={countryFilter}
+          onChange={(e) => setCountryFilter(e.target.value)}
+          className="w-full glass px-10 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30 transition-all"
+        />
+        {countryFilter && (
+          <button
+            onClick={() => setCountryFilter("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Clear
+          </button>
+        )}
       </div>
 
       {/* Player Grid */}

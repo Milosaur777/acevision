@@ -57,6 +57,21 @@ export default function PlayerDetailPage() {
   const wins = matches.filter((m) => m.winner_id === playerId).length;
   const losses = matches.length - wins;
 
+  // Aggregate stats
+  let totalAces = 0, totalDfs = 0, totalSvPt = 0, total1stIn = 0, total1stWon = 0, total2ndWon = 0;
+  let totalBpSaved = 0, totalBpFaced = 0;
+  for (const m of matches) {
+    const isP1 = m.player1_id === playerId;
+    totalAces += isP1 ? (m.p1_ace ?? 0) : (m.p2_ace ?? 0);
+    totalDfs += isP1 ? (m.p1_df ?? 0) : (m.p2_df ?? 0);
+    totalSvPt += isP1 ? (m.p1_svpt ?? 0) : (m.p2_svpt ?? 0);
+    total1stIn += isP1 ? (m.p1_1stIn ?? 0) : (m.p2_1stIn ?? 0);
+    total1stWon += isP1 ? (m.p1_1stWon ?? 0) : (m.p2_1stWon ?? 0);
+    total2ndWon += isP1 ? (m.p1_2ndWon ?? 0) : (m.p2_2ndWon ?? 0);
+    totalBpSaved += isP1 ? (m.p1_bpSaved ?? 0) : (m.p2_bpSaved ?? 0);
+    totalBpFaced += isP1 ? (m.p1_bpFaced ?? 0) : (m.p2_bpFaced ?? 0);
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       <Link href="/players" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -66,9 +81,17 @@ export default function PlayerDetailPage() {
       {/* Player Header Card */}
       <div className="glass p-6">
         <div className="flex items-start gap-5">
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/15 flex items-center justify-center text-primary font-bold text-xl shrink-0">
-            {player.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-          </div>
+          {"avatar_url" in player && (player as any).avatar_url ? (
+            <img
+              src={(player as any).avatar_url}
+              alt={player.name}
+              className="w-16 h-16 rounded-2xl object-cover border border-primary/15 shrink-0"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/15 flex items-center justify-center text-primary font-bold text-xl shrink-0">
+              {player.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+            </div>
+          )}
           <div className="flex-1">
             <h1 className="text-2xl font-bold tracking-tight">{player.name}</h1>
             <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1 flex-wrap">
@@ -102,7 +125,7 @@ export default function PlayerDetailPage() {
         {(["matches", "notes", "profile"] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={cn(
-              "flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all",
+              "flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all capitalize",
               tab === t ? "bg-primary/15 text-primary shadow-[0_0_12px_rgba(163,230,53,0.08)]" : "text-muted-foreground hover:text-foreground hover:bg-white/[0.03]"
             )}>
             {t}
@@ -119,10 +142,19 @@ export default function PlayerDetailPage() {
             </div>
           ) : matches.map((match) => {
             const won = match.winner_id === playerId;
+            const isP1 = match.player1_id === playerId;
+            const myAces = isP1 ? match.p1_ace : match.p2_ace;
+            const my1stIn = isP1 ? match.p1_1stIn : match.p2_1stIn;
+            const my1stWon = isP1 ? match.p1_1stWon : match.p2_1stWon;
+            const my2ndWon = isP1 ? match.p1_2ndWon : match.p2_2ndWon;
+            const mySvPt = isP1 ? match.p1_svpt : match.p2_svpt;
+            const myBpSaved = isP1 ? match.p1_bpSaved : match.p2_bpSaved;
+            const myBpFaced = isP1 ? match.p1_bpFaced : match.p2_bpFaced;
+            const hasStats = mySvPt > 0;
             return (
               <div key={match.id} className="glass stat-card px-5 py-3.5 flex items-center gap-4">
                 <div className={cn(
-                  "w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold",
+                  "w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0",
                   won ? "bg-primary/15 text-primary" : "bg-red-500/15 text-red-400"
                 )}>
                   {won ? "W" : "L"}
@@ -130,6 +162,13 @@ export default function PlayerDetailPage() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{match.tourney_name} — {match.round}</p>
                   <p className="text-xs text-muted-foreground">{match.surface} · {match.tourney_date}</p>
+                  {hasStats && (
+                    <div className="flex gap-3 mt-1 text-[11px] text-muted-foreground/70">
+                      <span>Aces: {myAces}</span>
+                      <span>1st: {mySvPt > 0 ? Math.round((my1stWon / my1stIn) * 100) : 0}%</span>
+                      <span>BP: {myBpSaved}/{myBpFaced}</span>
+                    </div>
+                  )}
                 </div>
                 <p className="text-sm font-mono shrink-0 text-muted-foreground">{match.score}</p>
               </div>
@@ -248,6 +287,41 @@ export default function PlayerDetailPage() {
                 {player.best_surfaces.map((s) => (
                   <span key={s} className="text-sm px-3 py-1 rounded-full bg-white/[0.06] text-foreground capitalize">{s}</span>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {totalSvPt > 0 && (
+            <div className="glass p-5">
+              <h3 className="font-semibold text-sm mb-3">Career Stats ({matches.length} matches)</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Aces</p>
+                  <p className="text-primary font-bold text-lg">{totalAces}</p>
+                  <p className="text-[11px] text-muted-foreground">{(totalAces / matches.length).toFixed(1)}/match</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">1st Serve %</p>
+                  <p className="text-primary font-bold text-lg">{totalSvPt > 0 ? Math.round((total1stIn / totalSvPt) * 100) : 0}%</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">1st Serve Won</p>
+                  <p className="text-primary font-bold text-lg">{total1stIn > 0 ? Math.round((total1stWon / total1stIn) * 100) : 0}%</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">2nd Serve Won</p>
+                  <p className="text-primary font-bold text-lg">{(totalSvPt - total1stIn) > 0 ? Math.round((total2ndWon / (totalSvPt - total1stIn)) * 100) : 0}%</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Double Faults</p>
+                  <p className="font-bold text-lg">{totalDfs}</p>
+                  <p className="text-[11px] text-muted-foreground">{(totalDfs / matches.length).toFixed(1)}/match</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Break Points Saved</p>
+                  <p className="font-bold text-lg">{totalBpSaved}/{totalBpFaced}</p>
+                  <p className="text-[11px] text-muted-foreground">{totalBpFaced > 0 ? Math.round((totalBpSaved / totalBpFaced) * 100) : 0}%</p>
+                </div>
               </div>
             </div>
           )}
