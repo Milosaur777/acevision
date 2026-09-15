@@ -126,7 +126,7 @@ export default function HomePage() {
           <h1 className="text-2xl font-bold tracking-tight">Overview</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
             Welcome back to AceVision{" "}
-            <span className="text-primary/70 italic">Smarter tennis through data.</span>
+            <span className="text-primary/70 italic block md:inline">Smarter tennis through data.</span>
           </p>
         </div>
         {/* Logo on mobile, date on desktop */}
