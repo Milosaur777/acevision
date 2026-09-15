@@ -244,28 +244,30 @@ export default function HomePage() {
                 <Trophy className="h-4 w-4 text-primary/60" />
                 <h2 className="font-semibold text-sm">Recent Matches</h2>
               </div>
-              <span className="text-[10px] text-primary/60 font-medium uppercase tracking-wider">View all →</span>
+              <Link href="/analysis" className="text-[10px] text-primary/60 font-medium uppercase tracking-wider hover:text-primary transition-colors">View all →</Link>
             </div>
-            <div className="divide-y divide-white/[0.03]">
+            <div className="px-4 py-2 space-y-1">
               {recentMatches.length === 0 ? (
-                <div className="px-5 py-8 text-center">
+                <div className="py-8 text-center">
                   <p className="text-muted-foreground text-sm">No matches yet</p>
                 </div>
               ) : (
                 recentMatches.slice(0, 5).map((match) => (
-                  <div key={match.id} className="px-5 py-3 table-row">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate font-mono">{match.score || "vs"}</p>
-                        <p className="text-xs text-muted-foreground/50 mt-0.5">
-                          {match.tourney_name || "Unknown"} · {match.surface || "—"}
-                        </p>
-                      </div>
-                      <span className="text-[11px] text-muted-foreground/40 shrink-0 ml-3 font-mono">
-                        {match.tourney_date?.slice(0, 4) || "—"}
-                      </span>
+                  <Link
+                    key={match.id}
+                    href={`/analysis?match=${match.id}`}
+                    className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors group"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate font-mono group-hover:text-primary/80 transition-colors">{match.score || "vs"}</p>
+                      <p className="text-xs text-muted-foreground/50 mt-0.5">
+                        {match.tourney_name || "Unknown"} · {match.surface || "—"}
+                      </p>
                     </div>
-                  </div>
+                    <span className="text-[11px] text-muted-foreground/40 shrink-0 ml-3 font-mono">
+                      {match.tourney_date?.slice(0, 4) || "—"}
+                    </span>
+                  </Link>
                 ))
               )}
             </div>
