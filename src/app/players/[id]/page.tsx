@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getSupabase } from "@/lib/supabase/client";
 import type { Player, Match, PlayerNote } from "@/types/tennis";
 import { ArrowLeft, MapPin, Ruler, Hand } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function PlayerDetailPage() {
   const params = useParams();
@@ -35,7 +36,10 @@ export default function PlayerDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-10 h-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl border-2 border-primary/30 border-t-primary animate-spin" />
+          <p className="text-muted-foreground text-sm">Loading player...</p>
+        </div>
       </div>
     );
   }
@@ -53,15 +57,15 @@ export default function PlayerDetailPage() {
   const losses = matches.length - wins;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <Link href="/players" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
         <ArrowLeft className="h-4 w-4" /> Players
       </Link>
 
       {/* Player Header Card */}
-      <div className="bg-card rounded-2xl border border-border p-6">
+      <div className="glass p-6">
         <div className="flex items-start gap-5">
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-bold text-xl shrink-0">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/15 flex items-center justify-center text-primary font-bold text-xl shrink-0">
             {player.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
           </div>
           <div className="flex-1">
@@ -93,12 +97,13 @@ export default function PlayerDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-card rounded-xl border border-border p-1">
+      <div className="flex gap-1 glass p-1">
         {(["matches", "notes", "profile"] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)}
-            className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors capitalize ${
-              tab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-            }`}>
+            className={cn(
+              "flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-all",
+              tab === t ? "bg-primary/15 text-primary shadow-[0_0_12px_rgba(163,230,53,0.08)]" : "text-muted-foreground hover:text-foreground hover:bg-white/[0.03]"
+            )}>
             {t}
           </button>
         ))}
@@ -106,16 +111,19 @@ export default function PlayerDetailPage() {
 
       {/* Matches */}
       {tab === "matches" && (
-        <div className="space-y-2">
+        <div className="space-y-2 stagger-children">
           {matches.length === 0 ? (
-            <div className="bg-card rounded-2xl border border-border p-10 text-center">
+            <div className="glass p-10 text-center">
               <p className="text-muted-foreground text-sm">No matches found</p>
             </div>
           ) : matches.map((match) => {
             const won = match.winner_id === playerId;
             return (
-              <div key={match.id} className="bg-card rounded-xl border border-border px-5 py-3.5 flex items-center gap-4 hover:border-primary/20 transition-colors">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${won ? "bg-primary/15 text-primary" : "bg-red-500/15 text-red-400"}`}>
+              <div key={match.id} className="glass stat-card px-5 py-3.5 flex items-center gap-4">
+                <div className={cn(
+                  "w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold",
+                  won ? "bg-primary/15 text-primary" : "bg-red-500/15 text-red-400"
+                )}>
                   {won ? "W" : "L"}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -131,27 +139,31 @@ export default function PlayerDetailPage() {
 
       {/* Notes */}
       {tab === "notes" && (
-        <div className="space-y-2">
+        <div className="space-y-2 stagger-children">
           {notes.length === 0 ? (
-            <div className="bg-card rounded-2xl border border-border p-10 text-center">
+            <div className="glass p-10 text-center">
               <p className="text-muted-foreground text-sm">No notes yet</p>
               <Link href="/admin" className="text-primary text-sm hover:underline mt-1 inline-block">Add notes in Admin</Link>
             </div>
           ) : notes.map((note) => (
-            <div key={note.id} className="bg-card rounded-xl border border-border px-5 py-3.5 hover:border-primary/20 transition-colors">
+            <div key={note.id} className="glass stat-card px-5 py-3.5">
               <div className="flex items-start gap-3">
-                <span className={`text-[11px] px-2 py-0.5 rounded-full capitalize shrink-0 font-medium ${
+                <span className={cn(
+                  "text-[11px] px-2 py-0.5 rounded-full capitalize shrink-0 font-medium",
                   note.category === "strength" ? "bg-primary/15 text-primary" :
                   note.category === "weakness" ? "bg-red-500/15 text-red-400" :
-                  "bg-secondary text-secondary-foreground"
-                }`}>
+                  "bg-white/[0.06] text-muted-foreground"
+                )}>
                   {note.category}
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm">{note.content}</p>
                   <div className="flex items-center gap-1.5 mt-1.5">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <div key={i} className={`w-1.5 h-1.5 rounded-full ${i < note.confidence ? "bg-primary" : "bg-muted"}`} />
+                      <div key={i} className={cn(
+                        "w-1.5 h-1.5 rounded-full",
+                        i < note.confidence ? "bg-primary" : "bg-white/[0.06]"
+                      )} />
                     ))}
                     <span className="text-[10px] text-muted-foreground ml-1">{note.confidence}/5</span>
                   </div>
@@ -164,7 +176,7 @@ export default function PlayerDetailPage() {
 
       {/* AI Profile */}
       {tab === "profile" && (
-        <div className="bg-card rounded-2xl border border-border p-10 text-center">
+        <div className="glass p-10 text-center">
           <p className="text-muted-foreground text-sm">AI profile generation coming soon.</p>
         </div>
       )}

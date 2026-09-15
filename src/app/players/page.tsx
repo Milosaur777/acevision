@@ -31,7 +31,7 @@ function PlayersContent() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Players</h1>
@@ -49,7 +49,7 @@ function PlayersContent() {
           placeholder="Search players..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-card border border-border rounded-xl pl-10 pr-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
+          className="w-full glass px-10 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30 transition-all"
         />
       </div>
 
@@ -57,19 +57,19 @@ function PlayersContent() {
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="bg-card rounded-2xl border border-border p-5 animate-pulse">
+            <div key={i} className="glass p-5 animate-pulse">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-muted" />
+                <div className="w-10 h-10 rounded-full bg-white/[0.04]" />
                 <div className="space-y-2 flex-1">
-                  <div className="h-4 bg-muted rounded w-2/3" />
-                  <div className="h-3 bg-muted rounded w-1/3" />
+                  <div className="h-4 bg-white/[0.04] rounded w-2/3" />
+                  <div className="h-3 bg-white/[0.04] rounded w-1/3" />
                 </div>
               </div>
             </div>
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-card rounded-2xl border border-border p-10 text-center">
+        <div className="glass p-10 text-center">
           <p className="text-muted-foreground">
             {search ? "No players match your search" : "No players imported yet"}
           </p>
@@ -80,15 +80,15 @@ function PlayersContent() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 stagger-children">
           {filtered.map((player) => (
             <Link
               key={player.id}
               href={`/players/${player.id}`}
-              className="bg-card rounded-2xl border border-border p-5 hover:border-primary/30 transition-all group"
+              className="glass stat-card p-5 group"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0 group-hover:bg-primary/20 transition-colors">
+                <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0 group-hover:bg-primary/20 group-hover:shadow-[0_0_15px_rgba(163,230,53,0.1)] transition-all">
                   {player.name.charAt(0)}
                 </div>
                 <div className="flex-1 min-w-0">

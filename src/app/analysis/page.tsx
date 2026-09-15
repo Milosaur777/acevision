@@ -57,29 +57,28 @@ export default function AnalysisPage() {
 
   const player1 = players.find((p) => p.id === player1Id);
   const player2 = players.find((p) => p.id === player2Id);
+  const inputCls = "w-full glass px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all placeholder:text-muted-foreground/40";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Match Analysis</h1>
         <p className="text-muted-foreground text-sm mt-0.5">Compare two players and get AI-powered predictions</p>
       </div>
 
       {/* Player Selection */}
-      <div className="bg-card rounded-2xl border border-border p-6">
+      <div className="glass p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="text-xs text-muted-foreground mb-1.5 block">Player 1</label>
-            <select value={player1Id} onChange={(e) => setPlayer1Id(e.target.value)}
-              className="w-full bg-input border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all">
+            <label className="text-xs text-muted-foreground/60 mb-1.5 block uppercase tracking-wider">Player 1</label>
+            <select value={player1Id} onChange={(e) => setPlayer1Id(e.target.value)} className={inputCls}>
               <option value="">Select player...</option>
               {players.map((p) => (<option key={p.id} value={p.id}>{p.name} ({p.country_code})</option>))}
             </select>
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1.5 block">Player 2</label>
-            <select value={player2Id} onChange={(e) => setPlayer2Id(e.target.value)}
-              className="w-full bg-input border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all">
+            <label className="text-xs text-muted-foreground/60 mb-1.5 block uppercase tracking-wider">Player 2</label>
+            <select value={player2Id} onChange={(e) => setPlayer2Id(e.target.value)} className={inputCls}>
               <option value="">Select player...</option>
               {players.map((p) => (<option key={p.id} value={p.id}>{p.name} ({p.country_code})</option>))}
             </select>
@@ -87,9 +86,8 @@ export default function AnalysisPage() {
         </div>
         <div className="flex items-end gap-3 flex-wrap">
           <div>
-            <label className="text-xs text-muted-foreground mb-1.5 block">Surface</label>
-            <select value={surface} onChange={(e) => setSurface(e.target.value)}
-              className="bg-input border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all">
+            <label className="text-xs text-muted-foreground/60 mb-1.5 block uppercase tracking-wider">Surface</label>
+            <select value={surface} onChange={(e) => setSurface(e.target.value)} className={inputCls + " w-auto"}>
               <option value="Hard">Hard</option>
               <option value="Clay">Clay</option>
               <option value="Grass">Grass</option>
@@ -98,7 +96,7 @@ export default function AnalysisPage() {
           </div>
           <button onClick={runAnalysis}
             disabled={!player1Id || !player2Id || player1Id === player2Id || loading}
-            className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+            className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:shadow-[0_0_20px_rgba(163,230,53,0.2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
             {loading ? (
               <><div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> Analyzing...</>
             ) : (
@@ -110,9 +108,9 @@ export default function AnalysisPage() {
 
       {/* Results */}
       {result && player1 && player2 && (
-        <div className="space-y-4">
+        <div className="space-y-4 animate-slide-up">
           {/* Winner Prediction */}
-          <div className="bg-card rounded-2xl border border-border p-6">
+          <div className="glass p-6">
             <div className="flex items-center gap-2 mb-4">
               <TrendingUp className="h-5 w-5 text-primary" />
               <h2 className="font-semibold">Prediction</h2>
@@ -129,21 +127,21 @@ export default function AnalysisPage() {
                 <p className="text-[11px] text-muted-foreground">confidence</p>
               </div>
             </div>
-            <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-              <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${result.confidence * 100}%` }} />
+            <div className="w-full h-2 bg-white/[0.04] rounded-full overflow-hidden">
+              <div className="h-full bg-primary rounded-full transition-all shadow-[0_0_12px_rgba(163,230,53,0.3)]" style={{ width: `${result.confidence * 100}%` }} />
             </div>
           </div>
 
           {/* Tactics */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-card rounded-2xl border border-border p-5">
+            <div className="glass p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Zap className="h-4 w-4 text-primary" />
                 <h3 className="font-medium text-sm">{player1.name}</h3>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">{result.tactics_player1}</p>
             </div>
-            <div className="bg-card rounded-2xl border border-border p-5">
+            <div className="glass p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Target className="h-4 w-4 text-cyan-400" />
                 <h3 className="font-medium text-sm">{player2.name}</h3>

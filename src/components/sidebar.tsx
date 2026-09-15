@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { Home, Users, BarChart3, Settings, Upload, Search } from "lucide-react";
+import { Home, Users, BarChart3, Settings, Upload, Search, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navSections = [
@@ -39,37 +39,38 @@ export function Sidebar() {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-64 flex-col bg-sidebar border-r border-sidebar-border z-40">
+      <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-[260px] flex-col glass-sidebar z-40">
         {/* Logo */}
-        <div className="px-5 py-5 border-b border-sidebar-border">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-sm font-bold text-primary-foreground">AV</span>
-            </div>
-            <span className="font-bold text-lg text-sidebar-foreground">AceVision</span>
-          </Link>
+        <div className="px-5 py-5 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center border border-primary/20">
+            <span className="text-sm font-bold text-primary tracking-tight">AV</span>
+          </div>
+          <div>
+            <span className="font-bold text-[15px] text-foreground tracking-tight">AceVision</span>
+            <p className="text-[10px] text-muted-foreground tracking-widest uppercase">AI Tennis Intelligence</p>
+          </div>
         </div>
 
         {/* Search */}
-        <div className="px-4 py-3">
-          <form onSubmit={handleSearch} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-sidebar-accent text-muted-foreground text-sm">
-            <Search className="h-4 w-4" />
+        <div className="px-4 py-2">
+          <form onSubmit={handleSearch} className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.04] text-muted-foreground text-sm transition-colors focus-within:border-primary/20 focus-within:bg-white/[0.05]">
+            <Search className="h-4 w-4 shrink-0" />
             <input
               type="text"
-              placeholder="Search players..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent outline-none flex-1 text-sm placeholder:text-muted-foreground"
+              className="bg-transparent outline-none flex-1 text-sm placeholder:text-muted-foreground/60"
             />
-            <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-background/50 border border-sidebar-border">⌘K</kbd>
+            <kbd className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.06] text-muted-foreground/50 font-mono">⌘K</kbd>
           </form>
         </div>
 
         {/* Nav sections */}
-        <nav className="flex-1 px-3 py-2 space-y-5 overflow-y-auto">
+        <nav className="flex-1 px-3 py-3 space-y-5 overflow-y-auto">
           {navSections.map((section) => (
             <div key={section.label}>
-              <p className="px-3 mb-2 text-[11px] font-semibold tracking-wider text-muted-foreground/60">
+              <p className="px-3 mb-2 text-[10px] font-semibold tracking-[0.15em] text-muted-foreground/40 uppercase">
                 {section.label}
               </p>
               <div className="space-y-0.5">
@@ -83,8 +84,8 @@ export function Sidebar() {
                       className={cn(
                         "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
                         active
-                          ? "bg-primary text-primary-foreground shadow-[0_0_20px_rgba(163,230,53,0.15)]"
-                          : "text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                          ? "nav-active"
+                          : "text-muted-foreground hover:text-foreground hover:bg-white/[0.03]"
                       )}
                     >
                       <Icon className="h-4 w-4" />
@@ -98,22 +99,25 @@ export function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="px-4 py-4 border-t border-sidebar-border">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
+        <div className="px-4 py-4 border-t border-white/[0.04]">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/15 flex items-center justify-center text-xs font-bold text-primary">
               T
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium truncate">Tennis Fan</p>
-              <p className="text-[10px] text-muted-foreground truncate">acevision.app</p>
+              <p className="text-xs font-medium truncate text-foreground">Tennis Fan</p>
+              <p className="text-[10px] text-muted-foreground/60 truncate">acevision.app</p>
             </div>
+            <button className="p-1.5 rounded-lg hover:bg-white/[0.04] text-muted-foreground/40 hover:text-muted-foreground transition-colors">
+              <LogOut className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
       </aside>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar/95 backdrop-blur-md border-t border-sidebar-border">
-        <div className="flex items-center justify-around py-2">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-sidebar border-t border-white/[0.04]">
+        <div className="flex items-center justify-around py-2 px-2">
           {navSections.flatMap((s) => s.items).map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href;
@@ -122,8 +126,8 @@ export function Sidebar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors min-w-[56px]",
-                  active ? "text-primary" : "text-muted-foreground"
+                  "flex flex-col items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-medium transition-all min-w-[52px]",
+                  active ? "text-primary bg-primary/10" : "text-muted-foreground/50"
                 )}
               >
                 <Icon className="h-5 w-5" />
