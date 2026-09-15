@@ -9,6 +9,8 @@ export interface Player {
   strengths: string[];
   weaknesses: string[];
   best_surfaces: string[];
+  avatar_url: string | null;
+  ranking: number | null;
   created_at: string;
 }
 

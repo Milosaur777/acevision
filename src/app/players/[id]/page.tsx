@@ -7,6 +7,7 @@ import { getSupabase } from "@/lib/supabase/client";
 import type { Player, Match, PlayerNote } from "@/types/tennis";
 import { ArrowLeft, MapPin, Ruler, Hand } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CountryFlag, HandEmoji } from "@/components/country-flag";
 
 export default function PlayerDetailPage() {
   const params = useParams();
@@ -176,8 +177,80 @@ export default function PlayerDetailPage() {
 
       {/* AI Profile */}
       {tab === "profile" && (
-        <div className="glass p-10 text-center">
-          <p className="text-muted-foreground text-sm">AI profile generation coming soon.</p>
+        <div className="space-y-4">
+          <div className="glass p-6">
+            <h3 className="font-semibold text-sm mb-4">Player Info</h3>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Country</p>
+                <div className="flex items-center gap-2">
+                  <CountryFlag code={player.country_code} />
+                  <span>{player.country_code}</span>
+                </div>
+              </div>
+              <div>
+                <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Handedness</p>
+                <p className="flex items-center gap-1.5"><HandEmoji hand={player.hand} /> {player.hand === "L" ? "Left" : "Right"}-handed</p>
+              </div>
+              {player.height_cm && (
+                <div>
+                  <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Height</p>
+                  <p>{player.height_cm} cm</p>
+                </div>
+              )}
+              {player.birth_date && (
+                <div>
+                  <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Age</p>
+                  <p>{Math.floor((Date.now() - new Date(player.birth_date).getTime()) / 31557600000)} years</p>
+                </div>
+              )}
+              {player.play_style && (
+                <div>
+                  <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Play Style</p>
+                  <p className="capitalize">{player.play_style.replace("-", " ")}</p>
+                </div>
+              )}
+              {"ranking" in player && (player as any).ranking && (
+                <div>
+                  <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Ranking</p>
+                  <p className="text-primary font-bold">#{(player as any).ranking}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {player.strengths?.length > 0 && (
+            <div className="glass p-5">
+              <h3 className="font-semibold text-sm mb-3">Strengths</h3>
+              <div className="flex flex-wrap gap-2">
+                {player.strengths.map((s) => (
+                  <span key={s} className="text-sm px-3 py-1 rounded-full bg-primary/15 text-primary capitalize">{s}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {player.weaknesses?.length > 0 && (
+            <div className="glass p-5">
+              <h3 className="font-semibold text-sm mb-3">Weaknesses</h3>
+              <div className="flex flex-wrap gap-2">
+                {player.weaknesses.map((w) => (
+                  <span key={w} className="text-sm px-3 py-1 rounded-full bg-red-500/15 text-red-400 capitalize">{w}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {player.best_surfaces?.length > 0 && (
+            <div className="glass p-5">
+              <h3 className="font-semibold text-sm mb-3">Best Surfaces</h3>
+              <div className="flex flex-wrap gap-2">
+                {player.best_surfaces.map((s) => (
+                  <span key={s} className="text-sm px-3 py-1 rounded-full bg-white/[0.06] text-foreground capitalize">{s}</span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

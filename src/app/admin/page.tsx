@@ -103,7 +103,7 @@ export default function AdminPage() {
     }, { onConflict: "id" });
     setPlayerMsg(error ? { ok: false, text: error.message } : { ok: true, text: `Added ${pName}` });
     if (!error) {
-      setPlayers([...players, { id, name: pName.trim(), country_code: pCountry.trim().toUpperCase(), hand: pHand, height_cm: pHeight ? parseInt(pHeight) : null, birth_date: pBirth || null, play_style: null, strengths: [], weaknesses: [], best_surfaces: [], created_at: new Date().toISOString() }]);
+      setPlayers([...players, { id, name: pName.trim(), country_code: pCountry.trim().toUpperCase(), hand: pHand, height_cm: pHeight ? parseInt(pHeight) : null, birth_date: pBirth || null, play_style: null, strengths: [], weaknesses: [], best_surfaces: [], avatar_url: null, ranking: null, created_at: new Date().toISOString() }]);
       setPName(""); setPCountry(""); setPHeight(""); setPBirth("");
     }
   }

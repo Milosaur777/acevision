@@ -102,7 +102,12 @@ function PlayersContent() {
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate text-sm">{player.name}</p>
+                  <div className="flex items-center gap-2">
+                    {"ranking" in player && (player as any).ranking && (
+                      <span className="text-[10px] font-mono text-primary/50 shrink-0">#{(player as any).ranking}</span>
+                    )}
+                    <p className="font-medium truncate text-sm">{player.name}</p>
+                  </div>
                   <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                     <CountryFlag code={player.country_code} />
                     <span>{player.country_code}</span>
@@ -112,7 +117,7 @@ function PlayersContent() {
                   </p>
                 </div>
               </div>
-              {(player.strengths?.length ?? 0) > 0 && (
+              {player.strengths?.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-3">
                   {player.strengths!.slice(0, 3).map((s) => (
                     <span key={s} className="text-[11px] px-2 py-0.5 rounded-full bg-primary/10 text-primary capitalize">

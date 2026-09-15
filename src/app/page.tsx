@@ -76,12 +76,16 @@ export default function HomePage() {
   useEffect(() => {
     async function loadData() {
       const db = getSupabase();
-      const [countRes, playersRes, predictionsRes, matchesRes] = await Promise.all([
+      const [countRes, predictionsRes, matchesRes] = await Promise.all([
         db.from("players").select("*", { count: "exact", head: true }),
-        db.from("players").select("*").order("name").limit(15),
         db.from("predictions").select("*").order("created_at", { ascending: false }).limit(20),
         db.from("matches").select("*").order("tourney_date", { ascending: false }).limit(10),
       ]);
+      // Try ranking first, fallback to name if column doesn't exist
+      let playersRes = await db.from("players").select("*").order("ranking", { ascending: true, nullsFirst: false }).order("name").limit(15);
+      if (playersRes.error) {
+        playersRes = await db.from("players").select("*").order("name").limit(15);
+      }
       setTotalPlayers(countRes.count ?? 0);
       setPlayers(playersRes.data ?? []);
       setPredictions(predictionsRes.data ?? []);
@@ -136,18 +140,18 @@ export default function HomePage() {
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div key={stat.label} className="glass stat-card p-5 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-primary/10 border border-primary/10">
-                    <Icon className="h-4 w-4 text-primary" />
-                  </div>
-                  <span className="text-sm text-muted-foreground">{stat.label}</span>
+            <div key={stat.label} className="glass stat-card p-5 flex flex-col gap-2">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-primary/10 border border-primary/10">
+                  <Icon className="h-4 w-4 text-primary" />
                 </div>
-                {stat.spark && (
-                  <Sparkline data={stat.spark} />
-                )}
+                <span className="text-sm text-muted-foreground">{stat.label}</span>
               </div>
+              {stat.spark && (
+                <div className="w-full flex justify-end">
+                  <Sparkline data={stat.spark} />
+                </div>
+              )}
               <div>
                 <p className="text-3xl font-bold tracking-tight">{stat.value}</p>
                 <p className="text-[11px] text-muted-foreground/50 mt-0.5">{stat.sub}</p>
