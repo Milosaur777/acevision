@@ -107,16 +107,6 @@ export async function POST(request: Request) {
         winner_id: row.winner_id,
         score: row.score || "",
         minutes: parseInt(row.minutes) || null,
-        p1_ace: parseInt(row.w_ace) || 0, p1_df: parseInt(row.w_df) || 0,
-        p1_svpt: parseInt(row.w_svpt) || 0, p1_1stIn: parseInt(row.w_1stIn) || 0,
-        p1_1stWon: parseInt(row.w_1stWon) || 0, p1_2ndWon: parseInt(row.w_2ndWon) || 0,
-        p1_SvGms: parseInt(row.w_SvGms) || 0, p1_bpSaved: parseInt(row.w_bpSaved) || 0,
-        p1_bpFaced: parseInt(row.w_bpFaced) || 0,
-        p2_ace: parseInt(row.l_ace) || 0, p2_df: parseInt(row.l_df) || 0,
-        p2_svpt: parseInt(row.l_svpt) || 0, p2_1stIn: parseInt(row.l_1stIn) || 0,
-        p2_1stWon: parseInt(row.l_1stWon) || 0, p2_2ndWon: parseInt(row.l_2ndWon) || 0,
-        p2_SvGms: parseInt(row.l_SvGms) || 0, p2_bpSaved: parseInt(row.l_bpSaved) || 0,
-        p2_bpFaced: parseInt(row.l_bpFaced) || 0,
       });
       if (matchBatch.length >= 50) {
         const { error } = await supabase.from("matches").upsert(matchBatch, { onConflict: "id" });
