@@ -6,6 +6,12 @@ import { getSupabase } from "@/lib/supabase/client";
 import type { Player, Prediction, Match } from "@/types/tennis";
 import { Users, Target, Trophy, Zap, ArrowRight, TrendingUp, Activity } from "lucide-react";
 
+function countryFlag(code: string): string {
+  if (!code || code.length !== 2) return "🏳️";
+  const c = code.toUpperCase();
+  return String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65, 0x1F1E6 + c.charCodeAt(1) - 65);
+}
+
 function Sparkline({ data, color = "var(--color-primary)" }: { data: number[]; color?: string }) {
   const max = Math.max(...data, 1);
   const w = 80;
@@ -70,14 +76,18 @@ export default function HomePage() {
   const [recentMatches, setRecentMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [totalPlayers, setTotalPlayers] = useState(0);
+
   useEffect(() => {
     async function loadData() {
       const db = getSupabase();
-      const [playersRes, predictionsRes, matchesRes] = await Promise.all([
-        db.from("players").select("*").order("name").limit(50),
+      const [countRes, playersRes, predictionsRes, matchesRes] = await Promise.all([
+        db.from("players").select("*", { count: "exact", head: true }),
+        db.from("players").select("*").order("name").limit(15),
         db.from("predictions").select("*").order("created_at", { ascending: false }).limit(20),
         db.from("matches").select("*").order("tourney_date", { ascending: false }).limit(10),
       ]);
+      setTotalPlayers(countRes.count ?? 0);
       setPlayers(playersRes.data ?? []);
       setPredictions(predictionsRes.data ?? []);
       setRecentMatches(matchesRes.data ?? []);
@@ -103,7 +113,7 @@ export default function HomePage() {
   const confData = [65, 72, 68, 80, 75, 82, 78, 88, 85, 72, 80, 85];
 
   const stats = [
-    { label: "Total Players", value: players.length, sub: "Active in database", icon: Users, spark: sparkData1 },
+    { label: "Total Players", value: totalPlayers, sub: "Active in database", icon: Users, spark: sparkData1 },
     { label: "AI Predictions", value: predictions.length, sub: "Predictions generated", icon: Target, spark: sparkData2 },
     { label: "Matches Tracked", value: recentMatches.length, sub: "Total matches analyzed", icon: Trophy, spark: sparkData3 },
     { label: "Win Rate", value: "—%", sub: "Not enough data yet", icon: Zap, spark: null },
@@ -176,7 +186,7 @@ export default function HomePage() {
           ) : (
             <div>
               {/* Table header */}
-              <div className="grid grid-cols-[40px_1fr_80px_100px] gap-2 px-6 py-2.5 text-[11px] font-medium text-muted-foreground/40 uppercase tracking-wider border-b border-white/[0.03]">
+              <div className="grid grid-cols-[36px_1fr_120px_130px] gap-2 px-6 py-2.5 text-[11px] font-medium text-muted-foreground/40 uppercase tracking-wider border-b border-white/[0.03]">
                 <span>#</span>
                 <span>Player</span>
                 <span>Country</span>
@@ -188,17 +198,23 @@ export default function HomePage() {
                   <Link
                     key={player.id}
                     href={`/players/${player.id}`}
-                    className="grid grid-cols-[40px_1fr_80px_100px] gap-2 items-center px-6 py-3 table-row"
+                    className="grid grid-cols-[36px_1fr_120px_130px] gap-2 items-center px-6 py-3 table-row group"
                   >
                     <span className="text-sm font-mono text-muted-foreground/40">{i + 1}</span>
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0 group-hover:bg-primary/20 transition-all">
                         {player.name.charAt(0)}
                       </div>
                       <span className="font-medium text-sm truncate">{player.name}</span>
                     </div>
-                    <span className="text-sm text-muted-foreground/60">{player.country_code}</span>
-                    <span className="text-sm text-muted-foreground/60">{player.hand === "L" ? "Left-handed" : "Right-handed"}</span>
+                    <span className="text-sm text-muted-foreground/60 flex items-center gap-1.5">
+                      <span className="text-base">{countryFlag(player.country_code)}</span>
+                      <span>{player.country_code}</span>
+                    </span>
+                    <span className="text-sm text-muted-foreground/60 flex items-center gap-1.5">
+                      <span>{player.hand === "L" ? "🤚" : "✋"}</span>
+                      <span>{player.hand === "L" ? "Left" : "Right"}</span>
+                    </span>
                   </Link>
                 ))}
               </div>
