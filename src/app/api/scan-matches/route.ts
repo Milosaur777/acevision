@@ -118,45 +118,69 @@ export async function POST(request: Request) {
       // Create missing players
       if (!p1) {
         const country = fixture.player1?.countryAcr || "UNK";
-        const { data: newPlayer } = await supabase
-          .from("players")
-          .insert({
-            name: homePlayer,
-            country_code: country,
-            hand: "R",
-            strengths: [],
-            weaknesses: [],
-            best_surfaces: [],
-          })
-          .select()
-          .single();
+        try {
+          const { data: newPlayer, error: createError } = await supabase
+            .from("players")
+            .insert({
+              name: homePlayer,
+              country_code: country,
+              hand: "R",
+              strengths: [],
+              weaknesses: [],
+              best_surfaces: [],
+            })
+            .select()
+            .single();
 
-        if (newPlayer) {
-          p1 = { id: newPlayer.id, name: newPlayer.name };
-          playerMap.set(homePlayer.toLowerCase(), p1);
-          createdPlayers++;
+          if (createError) {
+            console.error("Player creation error:", createError);
+            details.push({ match: homePlayer, status: `Create error: ${createError.message}` });
+            continue;
+          }
+
+          if (newPlayer) {
+            p1 = { id: newPlayer.id, name: newPlayer.name };
+            playerMap.set(homePlayer.toLowerCase(), p1);
+            createdPlayers++;
+          }
+        } catch (e) {
+          console.error("Player creation exception:", e);
+          details.push({ match: homePlayer, status: "Create exception" });
+          continue;
         }
       }
 
       if (!p2) {
         const country = fixture.player2?.countryAcr || "UNK";
-        const { data: newPlayer } = await supabase
-          .from("players")
-          .insert({
-            name: awayPlayer,
-            country_code: country,
-            hand: "R",
-            strengths: [],
-            weaknesses: [],
-            best_surfaces: [],
-          })
-          .select()
-          .single();
+        try {
+          const { data: newPlayer, error: createError } = await supabase
+            .from("players")
+            .insert({
+              name: awayPlayer,
+              country_code: country,
+              hand: "R",
+              strengths: [],
+              weaknesses: [],
+              best_surfaces: [],
+            })
+            .select()
+            .single();
 
-        if (newPlayer) {
-          p2 = { id: newPlayer.id, name: newPlayer.name };
-          playerMap.set(awayPlayer.toLowerCase(), p2);
-          createdPlayers++;
+          if (createError) {
+            console.error("Player creation error:", createError);
+            details.push({ match: awayPlayer, status: `Create error: ${createError.message}` });
+            continue;
+          }
+
+          if (newPlayer) {
+            p2 = { id: newPlayer.id, name: newPlayer.name };
+            playerMap.set(awayPlayer.toLowerCase(), p2);
+            createdPlayers++;
+          }
+        } catch (e) {
+          console.error("Player creation exception:", e);
+          details.push({ match: awayPlayer, status: "Create exception" });
+          continue;
         }
       }
 
@@ -179,7 +203,7 @@ export async function POST(request: Request) {
         continue;
       }
 
-      // Insert match
+      // Insert match (fixtures don't have stats yet)
       const { error: insertError } = await supabase.from("matches").insert({
         id: `api-${fixture.id || Date.now()}-${newCount}`,
         tourney_name: tournament,
@@ -191,24 +215,6 @@ export async function POST(request: Request) {
         winner_id: null,
         score: "",
         minutes: null,
-        p1_ace: 0,
-        p1_df: 0,
-        p1_svpt: 0,
-        p1_1stIn: 0,
-        p1_1stWon: 0,
-        p1_2ndWon: 0,
-        p1_SvGms: 0,
-        p1_bpSaved: 0,
-        p1_bpFaced: 0,
-        p2_ace: 0,
-        p2_df: 0,
-        p2_svpt: 0,
-        p2_1stIn: 0,
-        p2_1stWon: 0,
-        p2_2ndWon: 0,
-        p2_SvGms: 0,
-        p2_bpSaved: 0,
-        p2_bpFaced: 0,
       });
 
       if (insertError) {
