@@ -4,10 +4,15 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 export async function GET() {
   const supabase = getSupabaseServer();
 
+  // Get total predictions count
+  const { count: totalPredictions } = await supabase
+    .from("predictions")
+    .select("*", { count: "exact", head: true });
+
   // Get resolved predictions (match-linked with known winner)
   const { data: predictions, error: predError } = await supabase
     .from("predictions")
-    .select("id, predicted_winner_id, match_id, created_at")
+    .select("id, predicted_winner_id, match_id, created_at, confidence")
     .not("match_id", "is", null)
     .not("predicted_winner_id", "is", null)
     .order("created_at", { ascending: true });
@@ -15,7 +20,7 @@ export async function GET() {
   if (predError) {
     console.error("Accuracy API error:", predError);
     return NextResponse.json(
-      { accuracy: 0, total_resolved: 0, chart_data: [], error: predError.message },
+      { accuracy: 0, total_resolved: 0, total_predictions: totalPredictions ?? 0, chart_data: [], error: predError.message },
       { status: 500 }
     );
   }
@@ -24,6 +29,7 @@ export async function GET() {
     return NextResponse.json({
       accuracy: 0,
       total_resolved: 0,
+      total_predictions: totalPredictions ?? 0,
       chart_data: [],
       message: "No resolved predictions yet",
     });
@@ -64,6 +70,7 @@ export async function GET() {
   return NextResponse.json({
     accuracy,
     total_resolved: predictions.length,
+    total_predictions: totalPredictions ?? 0,
     chart_data: recentChart,
     correct_count: correctCount,
   });

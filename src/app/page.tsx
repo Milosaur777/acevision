@@ -70,7 +70,7 @@ export default function HomePage() {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [recentMatches, setRecentMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
-  const [accuracy, setAccuracy] = useState({ accuracy: 0, total_resolved: 0, chart_data: [] as number[], correct_count: 0, message: "" });
+  const [accuracy, setAccuracy] = useState({ accuracy: 0, total_resolved: 0, total_predictions: 0, chart_data: [] as number[], correct_count: 0, message: "" });
 
   const [totalPlayers, setTotalPlayers] = useState(0);
 
@@ -83,10 +83,10 @@ export default function HomePage() {
         db.from("matches").select("*").order("tourney_date", { ascending: false }).limit(10),
         fetch("/api/accuracy").then(r => r.json()).catch(() => ({ accuracy: 0, total_resolved: 0, chart_data: [], message: "Unavailable" })),
       ]);
-      // Try ranking first, fallback to name if column doesn't exist
-      let playersRes = await db.from("players").select("*").order("ranking", { ascending: true, nullsFirst: false }).order("name").limit(15);
+      // Load all players for name resolution in predictions
+      let playersRes = await db.from("players").select("*").order("ranking", { ascending: true, nullsFirst: false }).order("name");
       if (playersRes.error) {
-        playersRes = await db.from("players").select("*").order("name").limit(15);
+        playersRes = await db.from("players").select("*").order("name");
       }
       setTotalPlayers(countRes.count ?? 0);
       setPlayers(playersRes.data ?? []);
@@ -328,7 +328,9 @@ export default function HomePage() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Activity className="h-4 w-4 text-primary/60" />
-                <h2 className="font-semibold text-sm">Prediction Accuracy</h2>
+                <h2 className="font-semibold text-sm">
+                  {accuracy.total_resolved >= 2 ? "Prediction Accuracy" : "Prediction Confidence"}
+                </h2>
               </div>
               <span className="ai-badge text-[10px] font-bold text-primary px-2.5 py-1 rounded-lg uppercase tracking-wider">AI Insights</span>
             </div>
@@ -340,15 +342,25 @@ export default function HomePage() {
                     {accuracy.correct_count}/{accuracy.total_resolved} correct
                   </span>
                 </>
+              ) : accuracy.total_predictions >= 2 ? (
+                <>
+                  <span className="text-3xl font-bold text-primary">{accuracy.total_predictions}</span>
+                  <span className="text-xs text-muted-foreground/50 mb-1">predictions made</span>
+                </>
               ) : (
                 <span className="text-lg font-bold text-muted-foreground/50">Need more data</span>
               )}
             </div>
             {accuracy.chart_data.length >= 2 ? (
               <MiniLineChart data={accuracy.chart_data} />
+            ) : accuracy.total_predictions >= 2 ? (
+              <>
+                <MiniLineChart data={predictions.slice(0, 12).map((p) => Math.round((p.confidence || 0) * 100)).reverse()} />
+                <p className="text-[10px] text-muted-foreground/30 mt-2">Confidence trend — link predictions to matches for accuracy tracking</p>
+              </>
             ) : (
               <div className="h-16 flex items-center justify-center">
-                <p className="text-xs text-muted-foreground/30">Make match predictions to see accuracy</p>
+                <p className="text-xs text-muted-foreground/30">Make predictions to see trends</p>
               </div>
             )}
             <div className="flex justify-between text-[10px] text-muted-foreground/30 mt-2 font-mono">
