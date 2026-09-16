@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabase/client";
 import type { Player, Prediction, Match } from "@/types/tennis";
-import { Users, Target, Trophy, Zap, ArrowRight, TrendingUp, Activity } from "lucide-react";
+import { Users, Target, Trophy, Zap, ArrowRight, TrendingUp, Activity, Brain } from "lucide-react";
 import { CountryFlag, HandEmoji } from "@/components/country-flag";
 
 function Sparkline({ data, color = "var(--color-primary)" }: { data: number[]; color?: string }) {
@@ -272,6 +272,53 @@ export default function HomePage() {
                     </span>
                   </Link>
                 ))
+              )}
+            </div>
+          </div>
+
+          {/* Past Predictions */}
+          <div className="glass">
+            <div className="px-5 py-4 border-b border-white/[0.04] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Brain className="h-4 w-4 text-primary/60" />
+                <h2 className="font-semibold text-sm">Past Predictions</h2>
+              </div>
+              <Link href="/analysis" className="text-[10px] text-primary/60 font-medium uppercase tracking-wider hover:text-primary transition-colors">View all →</Link>
+            </div>
+            <div className="px-4 py-2 space-y-1">
+              {predictions.length === 0 ? (
+                <div className="py-8 text-center">
+                  <p className="text-muted-foreground text-sm">No predictions yet</p>
+                </div>
+              ) : (
+                predictions.slice(0, 5).map((pred) => {
+                  const isMatchPrediction = pred.match_id !== null;
+                  const p1 = players.find((p) => p.id === pred.player1_id);
+                  const p2 = players.find((p) => p.id === pred.player2_id);
+                  const winner = players.find((p) => p.id === pred.predicted_winner_id);
+                  return (
+                    <div
+                      key={pred.id}
+                      className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium truncate">
+                            {p1?.name || "?"} vs {p2?.name || "?"}
+                          </span>
+                          {isMatchPrediction ? (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary/70 font-medium">Match</span>
+                          ) : (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.04] text-muted-foreground/40 font-medium">Fun</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground/50 mt-0.5">
+                          Predicted: {winner?.name || "Unknown"} · {Math.round((pred.confidence || 0) * 100)}% confidence
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>
