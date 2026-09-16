@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabase/client";
 import type { Player, Match, PlayerNote } from "@/types/tennis";
-import { ArrowLeft, MapPin, Ruler, Hand } from "lucide-react";
+import { ArrowLeft, MapPin, Ruler, Hand, Pencil, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CountryFlag, HandEmoji } from "@/components/country-flag";
 
@@ -17,6 +17,9 @@ export default function PlayerDetailPage() {
   const [notes, setNotes] = useState<PlayerNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"matches" | "notes" | "profile">("matches");
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ name: "", country_code: "", hand: "R" as "L" | "R", ranking: "" });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -218,44 +221,144 @@ export default function PlayerDetailPage() {
       {tab === "profile" && (
         <div className="space-y-4">
           <div className="glass p-6">
-            <h3 className="font-semibold text-sm mb-4">Player Info</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Country</p>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-sm">Player Info</h3>
+              {!editing ? (
+                <button
+                  onClick={() => {
+                    setEditForm({
+                      name: player.name,
+                      country_code: player.country_code,
+                      hand: player.hand,
+                      ranking: (player as any).ranking?.toString() || "",
+                    });
+                    setEditing(true);
+                  }}
+                  className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
+                >
+                  <Pencil className="h-3 w-3" /> Edit
+                </button>
+              ) : (
                 <div className="flex items-center gap-2">
-                  <CountryFlag code={player.country_code} />
-                  <span>{player.country_code}</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Handedness</p>
-                <p className="flex items-center gap-1.5"><HandEmoji hand={player.hand} /> {player.hand === "L" ? "Left" : "Right"}-handed</p>
-              </div>
-              {player.height_cm && (
-                <div>
-                  <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Height</p>
-                  <p>{player.height_cm} cm</p>
-                </div>
-              )}
-              {player.birth_date && (
-                <div>
-                  <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Age</p>
-                  <p>{Math.floor((Date.now() - new Date(player.birth_date).getTime()) / 31557600000)} years</p>
-                </div>
-              )}
-              {player.play_style && (
-                <div>
-                  <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Play Style</p>
-                  <p className="capitalize">{player.play_style.replace("-", " ")}</p>
-                </div>
-              )}
-              {"ranking" in player && (player as any).ranking && (
-                <div>
-                  <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Ranking</p>
-                  <p className="text-primary font-bold">#{(player as any).ranking}</p>
+                  <button
+                    onClick={async () => {
+                      setSaving(true);
+                      try {
+                        await fetch(`/api/players/${playerId}`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            name: editForm.name,
+                            country_code: editForm.country_code,
+                            hand: editForm.hand,
+                            ranking: editForm.ranking ? parseInt(editForm.ranking) : null,
+                          }),
+                        });
+                        setPlayer({ ...player, ...editForm, ranking: editForm.ranking ? parseInt(editForm.ranking) : null });
+                        setEditing(false);
+                      } catch (e) {
+                        console.error("Save failed:", e);
+                      } finally {
+                        setSaving(false);
+                      }
+                    }}
+                    disabled={saving}
+                    className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+                  >
+                    <Check className="h-3 w-3" /> {saving ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    onClick={() => setEditing(false)}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="h-3 w-3" /> Cancel
+                  </button>
                 </div>
               )}
             </div>
+
+            {editing ? (
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Name</p>
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    className="w-full glass px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+                <div>
+                  <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Country Code</p>
+                  <input
+                    type="text"
+                    value={editForm.country_code}
+                    onChange={(e) => setEditForm({ ...editForm, country_code: e.target.value })}
+                    className="w-full glass px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    maxLength={3}
+                  />
+                </div>
+                <div>
+                  <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Handedness</p>
+                  <select
+                    value={editForm.hand}
+                    onChange={(e) => setEditForm({ ...editForm, hand: e.target.value as "L" | "R" })}
+                    className="w-full glass px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                    <option value="R">Right</option>
+                    <option value="L">Left</option>
+                  </select>
+                </div>
+                <div>
+                  <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Ranking</p>
+                  <input
+                    type="number"
+                    value={editForm.ranking}
+                    onChange={(e) => setEditForm({ ...editForm, ranking: e.target.value })}
+                    className="w-full glass px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    placeholder="#"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Country</p>
+                  <div className="flex items-center gap-2">
+                    <CountryFlag code={player.country_code} />
+                    <span>{player.country_code}</span>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Handedness</p>
+                  <p className="flex items-center gap-1.5"><HandEmoji hand={player.hand} /> {player.hand === "L" ? "Left" : "Right"}-handed</p>
+                </div>
+                {player.height_cm && (
+                  <div>
+                    <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Height</p>
+                    <p>{player.height_cm} cm</p>
+                  </div>
+                )}
+                {player.birth_date && (
+                  <div>
+                    <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Age</p>
+                    <p>{Math.floor((Date.now() - new Date(player.birth_date).getTime()) / 31557600000)} years</p>
+                  </div>
+                )}
+                {player.play_style && (
+                  <div>
+                    <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Play Style</p>
+                    <p className="capitalize">{player.play_style.replace("-", " ")}</p>
+                  </div>
+                )}
+                {"ranking" in player && (player as any).ranking && (
+                  <div>
+                    <p className="text-muted-foreground/50 text-xs uppercase tracking-wider mb-1">Ranking</p>
+                    <p className="text-primary font-bold">#{(player as any).ranking}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {player.strengths?.length > 0 && (
