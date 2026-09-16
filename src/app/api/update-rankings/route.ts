@@ -1,94 +1,75 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 
-const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
-const API_HOST = "tennis-api-atp-wta-itf.p.rapidapi.com";
+const CSV_URL = "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2026.csv";
+
+function parseCsvLine(line: string): string[] {
+  const result: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"') { inQuotes = !inQuotes; }
+    else if (char === "," && !inQuotes) { result.push(current.trim()); current = ""; }
+    else { current += char; }
+  }
+  result.push(current.trim());
+  return result;
+}
 
 export async function POST() {
-  if (!RAPIDAPI_KEY) {
-    return NextResponse.json(
-      { error: "RAPIDAPI_KEY not configured. Add it to .env.local" },
-      { status: 500 }
-    );
-  }
-
   const supabase = getSupabaseServer();
 
   try {
-    // Fetch ATP rankings from Tennis-API
-    const res = await fetch(
-      `https://${API_HOST}/tennis/v2/atp/ranking`,
-      {
-        method: "GET",
-        headers: {
-          "X-RapidAPI-Key": RAPIDAPI_KEY,
-          "X-RapidAPI-Host": API_HOST,
-        },
+    const res = await fetch(CSV_URL);
+    if (!res.ok) return NextResponse.json({ error: "Failed to fetch CSV" }, { status: 500 });
+
+    const text = await res.text();
+    const lines = text.split("\n").filter((l) => l.trim());
+    if (lines.length < 2) return NextResponse.json({ error: "CSV empty" }, { status: 500 });
+
+    const headers = parseCsvLine(lines[0]);
+    const headerMap = new Map<string, number>();
+    headers.forEach((h, i) => headerMap.set(h.toLowerCase(), i));
+
+    // Extract latest ranking for each player from CSV
+    const playerRankings = new Map<string, number>();
+
+    for (let i = 1; i < lines.length; i++) {
+      const cols = parseCsvLine(lines[i]);
+      if (cols.length < 10) continue;
+
+      const winnerName = cols[headerMap.get("winner_name") ?? -1] || "";
+      const loserName = cols[headerMap.get("loser_name") ?? -1] || "";
+      const winnerRank = parseInt(cols[headerMap.get("winner_rank") ?? -1]) || 0;
+      const loserRank = parseInt(cols[headerMap.get("loser_rank") ?? -1]) || 0;
+
+      if (winnerName && winnerRank > 0 && !playerRankings.has(winnerName.toLowerCase())) {
+        playerRankings.set(winnerName.toLowerCase(), winnerRank);
       }
-    );
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      return NextResponse.json(
-        { error: `Tennis-API error: ${res.status}`, details: errorText },
-        { status: res.status }
-      );
-    }
-
-    const apiData = await res.json();
-    const rankings = apiData.data || apiData.results || apiData || [];
-
-    if (!Array.isArray(rankings) || rankings.length === 0) {
-      return NextResponse.json(
-        { error: "No ranking data returned from API" },
-        { status: 500 }
-      );
+      if (loserName && loserRank > 0 && !playerRankings.has(loserName.toLowerCase())) {
+        playerRankings.set(loserName.toLowerCase(), loserRank);
+      }
     }
 
     // Get all players for matching
-    const { data: players } = await supabase
-      .from("players")
-      .select("id, name, ranking");
-
+    const { data: players } = await supabase.from("players").select("id, name");
     let updatedCount = 0;
-    let notFoundCount = 0;
 
-    for (const rankEntry of rankings.slice(0, 500)) {
-      const playerName = rankEntry.player?.name || rankEntry.name || "";
-      const newRanking = rankEntry.rank || rankEntry.ranking || rankEntry.position;
-
-      if (!playerName || !newRanking) continue;
-
-      // Find matching player by name
-      const match = players?.find(
-        (p) =>
-          p.name.toLowerCase() === playerName.toLowerCase() ||
-          p.name.toLowerCase().includes(playerName.toLowerCase()) ||
-          playerName.toLowerCase().includes(p.name.toLowerCase())
-      );
-
+    for (const [name, ranking] of playerRankings) {
+      const match = players?.find((p) => p.name.toLowerCase() === name);
       if (match) {
-        await supabase
-          .from("players")
-          .update({ ranking: newRanking })
-          .eq("id", match.id);
+        await supabase.from("players").update({ ranking }).eq("id", match.id);
         updatedCount++;
-      } else {
-        notFoundCount++;
       }
     }
 
     return NextResponse.json({
-      message: `Rankings updated: ${updatedCount} players updated`,
+      message: `Rankings updated: ${updatedCount} players from Sackmann CSV`,
       updated: updatedCount,
-      not_found: notFoundCount,
-      total_from_api: rankings.length,
+      total_rankings: playerRankings.size,
     });
   } catch (error) {
-    console.error("Rankings update error:", error);
-    return NextResponse.json(
-      { error: "Update failed", details: (error as Error).message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Update failed", details: (error as Error).message }, { status: 500 });
   }
 }

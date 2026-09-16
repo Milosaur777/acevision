@@ -71,7 +71,22 @@ function PlayersContent() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in relative">
+      {/* Background image */}
+      <div className="fixed inset-0 -z-10">
+        <img
+          src="/players-bg-mobile.avif"
+          alt=""
+          className="w-full h-full object-cover md:hidden"
+        />
+        <img
+          src="/players-bg.avif"
+          alt=""
+          className="w-full h-full object-cover hidden md:block"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background" />
+      </div>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Players</h1>
@@ -85,7 +100,7 @@ function PlayersContent() {
         <button
           onClick={updateRankings}
           disabled={updatingRankings}
-          className="px-4 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary text-sm font-medium hover:bg-primary/15 transition-all disabled:opacity-50 flex items-center gap-2"
+          className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:shadow-[0_0_15px_rgba(163,230,53,0.3)] transition-all disabled:opacity-50 flex items-center gap-2"
         >
           {updatingRankings ? (
             <><RefreshCw className="h-3.5 w-3.5 animate-spin" /> Updating...</>
