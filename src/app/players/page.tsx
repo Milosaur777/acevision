@@ -7,6 +7,7 @@ import { getSupabase } from "@/lib/supabase/client";
 import type { Player } from "@/types/tennis";
 import { Search, Trash2, Trophy, RefreshCw } from "lucide-react";
 import { CountryFlag, HandEmoji } from "@/components/country-flag";
+import PageBackground from "@/components/page-background";
 
 function PlayersContent() {
   const searchParams = useSearchParams();
@@ -72,20 +73,7 @@ function PlayersContent() {
 
   return (
     <div className="space-y-6 animate-fade-in relative">
-      {/* Background image */}
-      <div className="fixed inset-0 -z-10 animate-fade-in">
-        <img
-          src="/players-bg-mobile.avif"
-          alt=""
-          className="w-full h-full object-cover md:hidden"
-        />
-        <img
-          src="/players-bg.avif"
-          alt=""
-          className="w-full h-full object-cover hidden md:block"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background md:from-background/80 md:via-background/60 md:to-background" />
-      </div>
+      <PageBackground mobileSrc="/players-bg-mobile.avif" desktopSrc="/players-bg.avif" />
 
       <div className="flex items-center justify-between">
         <div>

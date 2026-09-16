@@ -6,6 +6,7 @@ import type { Player, PlayerNote } from "@/types/tennis";
 import { STRENGTH_WEAKNESS_OPTIONS, SURFACE_OPTIONS } from "@/types/tennis";
 import { Save, Plus, Trash2, UserPlus, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
+import PageBackground from "@/components/page-background";
 
 type Tab = "notes" | "add-player" | "add-match";
 
@@ -138,7 +139,8 @@ export default function AdminPage() {
   const inputCls = "w-full glass px-4 py-3 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all";
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in relative">
+      <PageBackground mobileSrc="/admin-bg-mobile.avif" desktopSrc="/admin-bg.avif" />
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Admin</h1>
         <p className="text-muted-foreground text-sm mt-0.5">Manage players, matches, and notes</p>

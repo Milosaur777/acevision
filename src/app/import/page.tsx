@@ -5,6 +5,7 @@ import { Upload, Download, Check, AlertCircle, ExternalLink, Trash2, Scan, Troph
 import { getSupabase } from "@/lib/supabase/client";
 import type { Match } from "@/types/tennis";
 import { cn } from "@/lib/utils";
+import PageBackground from "@/components/page-background";
 
 const CSV_SOURCES = [
   { label: "ATP Matches 2026", url: "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2026.csv" },
@@ -137,7 +138,8 @@ export default function ImportPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in relative">
+      <PageBackground mobileSrc="/import-bg-mobile.avif" desktopSrc="/import-bg.avif" />
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Import Data</h1>
         <p className="text-muted-foreground text-sm mt-0.5">Import ATP/WTA match data from CSV files</p>

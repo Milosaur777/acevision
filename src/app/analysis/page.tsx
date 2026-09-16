@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase/client";
 import type { Player, Prediction, Match } from "@/types/tennis";
 import { Zap, Target, TrendingUp, Swords, Brain, Trash2, CheckCircle2, XCircle, Clock, Filter } from "lucide-react";
+import PageBackground from "@/components/page-background";
 
 interface AnalysisResult {
   predicted_winner_id: string;
@@ -101,7 +102,8 @@ export default function AnalysisPage() {
   const inputCls = "w-full glass px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all placeholder:text-muted-foreground/40";
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in relative">
+      <PageBackground mobileSrc="/analysis-bg-mobile.avif" desktopSrc="/analysis-bg.avif" />
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Match Analysis</h1>
         <p className="text-muted-foreground text-sm mt-0.5">Compare two players and get AI-powered predictions</p>
