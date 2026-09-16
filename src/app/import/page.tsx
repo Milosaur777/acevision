@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Upload, Download, Check, AlertCircle, ExternalLink, Trash2 } from "lucide-react";
+import { Upload, Download, Check, AlertCircle, ExternalLink, Trash2, Scan, Trophy } from "lucide-react";
 import { getSupabase } from "@/lib/supabase/client";
 import type { Match } from "@/types/tennis";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,8 @@ export default function ImportPage() {
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
   const [recentMatches, setRecentMatches] = useState<Match[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanResult, setScanResult] = useState<{ message: string; new: number; skipped: number; created_players: number; details: { match: string; status: string }[] } | null>(null);
 
   useEffect(() => {
     async function loadMatches() {
@@ -88,11 +90,89 @@ export default function ImportPage() {
     }
   }
 
+  async function scanMatches() {
+    setScanning(true);
+    setScanResult(null);
+    try {
+      const res = await fetch("/api/scan-matches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tour: "atp", days: 14 }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setScanResult(data);
+        // Refresh recent matches
+        const db = getSupabase();
+        const { data: matchesData } = await db.from("matches").select("*").order("tourney_date", { ascending: false }).limit(20);
+        setRecentMatches(matchesData ?? []);
+      } else {
+        setScanResult({ message: data.error || "Scan failed", new: 0, skipped: 0, created_players: 0, details: [] });
+      }
+    } catch {
+      setScanResult({ message: "Scan failed. Check RAPIDAPI_KEY in .env.local", new: 0, skipped: 0, created_players: 0, details: [] });
+    } finally {
+      setScanning(false);
+    }
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Import Data</h1>
         <p className="text-muted-foreground text-sm mt-0.5">Import ATP/WTA match data from CSV files</p>
+      </div>
+
+      {/* Auto Match Scanner */}
+      <div className="glass p-6">
+        <div className="flex items-center gap-2 mb-3">
+          <Scan className="h-5 w-5 text-primary" />
+          <h2 className="font-semibold">Auto Match Scanner</h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Scan Tennis-API.com for upcoming ATP matches. Auto-creates missing players. Checks for duplicates.
+        </p>
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={scanMatches}
+            disabled={scanning}
+            className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:shadow-[0_0_20px_rgba(163,230,53,0.2)] transition-all disabled:opacity-50 flex items-center gap-2"
+          >
+            {scanning ? (
+              <><div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> Scanning...</>
+            ) : (
+              <><Scan className="h-4 w-4" /> Scan Next 14 Days</>
+            )}
+          </button>
+          <span className="text-xs text-muted-foreground/50">Requires RapidAPI key</span>
+        </div>
+
+        {scanResult && (
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Check className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">{scanResult.message}</span>
+            </div>
+            {scanResult.created_players > 0 && (
+              <p className="text-xs text-muted-foreground">Created {scanResult.created_players} new players</p>
+            )}
+            {scanResult.details && scanResult.details.length > 0 && (
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {scanResult.details.slice(0, 10).map((d, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs px-2 py-1 rounded bg-white/[0.02]">
+                    <span className="text-muted-foreground truncate">{d.match}</span>
+                    <span className={d.status === "Imported" ? "text-primary" : d.status === "Already exists" ? "text-muted-foreground/50" : "text-red-400"}>
+                      {d.status}
+                    </span>
+                  </div>
+                ))}
+                {scanResult.details.length > 10 && (
+                  <p className="text-xs text-muted-foreground/40 text-center">+{scanResult.details.length - 10} more</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Quick Import */}

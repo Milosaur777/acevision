@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabase/client";
 import type { Player } from "@/types/tennis";
-import { Search, Trash2 } from "lucide-react";
+import { Search, Trash2, Trophy, RefreshCw } from "lucide-react";
 import { CountryFlag, HandEmoji } from "@/components/country-flag";
 
 function PlayersContent() {
@@ -16,6 +16,8 @@ function PlayersContent() {
   const [search, setSearch] = useState(initialQuery);
   const [countryFilter, setCountryFilter] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [updatingRankings, setUpdatingRankings] = useState(false);
+  const [rankingsMessage, setRankingsMessage] = useState("");
 
   useEffect(() => {
     async function loadPlayers() {
@@ -46,6 +48,28 @@ function PlayersContent() {
     }
   }
 
+  async function updateRankings() {
+    setUpdatingRankings(true);
+    setRankingsMessage("");
+    try {
+      const res = await fetch("/api/update-rankings", { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        setRankingsMessage(data.message);
+        // Refresh players to show new rankings
+        const db = getSupabase();
+        const { data: freshPlayers } = await db.from("players").select("*").order("name");
+        setPlayers(freshPlayers ?? []);
+      } else {
+        setRankingsMessage(data.error || "Failed to update rankings");
+      }
+    } catch {
+      setRankingsMessage("Failed to update. Check RAPIDAPI_KEY.");
+    } finally {
+      setUpdatingRankings(false);
+    }
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -54,7 +78,21 @@ function PlayersContent() {
           <p className="text-muted-foreground text-sm mt-0.5">
             {players.length} players in database
           </p>
+          {rankingsMessage && (
+            <p className="text-xs text-primary mt-1">{rankingsMessage}</p>
+          )}
         </div>
+        <button
+          onClick={updateRankings}
+          disabled={updatingRankings}
+          className="px-4 py-2 rounded-xl bg-primary/10 border border-primary/20 text-primary text-sm font-medium hover:bg-primary/15 transition-all disabled:opacity-50 flex items-center gap-2"
+        >
+          {updatingRankings ? (
+            <><RefreshCw className="h-3.5 w-3.5 animate-spin" /> Updating...</>
+          ) : (
+            <><Trophy className="h-3.5 w-3.5" /> Sync Rankings</>
+          )}
+        </button>
       </div>
 
       {/* Search */}
