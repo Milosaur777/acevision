@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Upload, Download, Check, AlertCircle, ExternalLink, Trash2, Scan, Trophy } from "lucide-react";
+import { Upload, Download, Check, AlertCircle, ExternalLink, Trash2, Scan, Trophy, RefreshCw } from "lucide-react";
 import { getSupabase } from "@/lib/supabase/client";
 import type { Match } from "@/types/tennis";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,8 @@ export default function ImportPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState<{ message: string; new: number; skipped: number; created_players: number; details: { match: string; status: string }[] } | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshResult, setRefreshResult] = useState<{ message: string; updated: number; inserted: number; skipped: number; details: { match: string; status: string }[] } | null>(null);
 
   useEffect(() => {
     async function loadMatches() {
@@ -116,6 +118,24 @@ export default function ImportPage() {
     }
   }
 
+  async function refreshStats() {
+    setRefreshing(true);
+    setRefreshResult(null);
+    try {
+      const res = await fetch("/api/refresh-stats", { method: "POST" });
+      const data = await res.json();
+      setRefreshResult(data);
+      // Refresh recent matches
+      const db = getSupabase();
+      const { data: matchesData } = await db.from("matches").select("*").order("tourney_date", { ascending: false }).limit(20);
+      setRecentMatches(matchesData ?? []);
+    } catch {
+      setRefreshResult({ message: "Refresh failed", updated: 0, inserted: 0, skipped: 0, details: [] });
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
@@ -195,6 +215,53 @@ export default function ImportPage() {
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mt-3">
           <ExternalLink className="h-3 w-3" /> More CSV files on GitHub
         </a>
+      </div>
+
+      {/* Refresh Match Stats */}
+      <div className="glass p-6">
+        <div className="flex items-center gap-2 mb-3">
+          <RefreshCw className="h-5 w-5 text-primary" />
+          <h2 className="font-semibold">Refresh Match Stats</h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Fetch latest Sackmann CSV data to enrich matches with full stats (aces, serve %, break points).
+          Updates existing matches and inserts missing ones.
+        </p>
+        <button
+          onClick={refreshStats}
+          disabled={refreshing}
+          className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:shadow-[0_0_20px_rgba(163,230,53,0.2)] transition-all disabled:opacity-50 flex items-center gap-2"
+        >
+          {refreshing ? (
+            <><RefreshCw className="h-4 w-4 animate-spin" /> Refreshing...</>
+          ) : (
+            <><RefreshCw className="h-4 w-4" /> Refresh Stats from CSV</>
+          )}
+        </button>
+
+        {refreshResult && (
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Check className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">{refreshResult.message}</span>
+            </div>
+            {refreshResult.details && refreshResult.details.length > 0 && (
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {refreshResult.details.slice(0, 10).map((d, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs px-2 py-1 rounded bg-white/[0.02]">
+                    <span className="text-muted-foreground truncate">{d.match}</span>
+                    <span className={d.status === "Updated stats" ? "text-primary" : d.status === "Inserted" ? "text-cyan-400" : "text-muted-foreground/50"}>
+                      {d.status}
+                    </span>
+                  </div>
+                ))}
+                {refreshResult.details.length > 10 && (
+                  <p className="text-xs text-muted-foreground/40 text-center">+{refreshResult.details.length - 10} more</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Manual CSV Upload */}
