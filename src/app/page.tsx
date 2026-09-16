@@ -38,29 +38,136 @@ function Sparkline({ data, color = "var(--color-primary)" }: { data: number[]; c
 
 function MiniLineChart({ data }: { data: number[] }) {
   if (data.length < 2) return null;
-  const w = 200;
-  const h = 60;
-  const max = Math.max(...data, 1);
+  const w = 220;
+  const h = 70;
+  const padding = { top: 15, bottom: 0 };
+  const chartH = h - padding.top - padding.bottom;
+  const max = Math.max(...data, 100);
   const min = Math.min(...data, 0);
   const range = max - min || 1;
-  const points = data.map((v, i) => {
-    const x = (i / (data.length - 1)) * w;
-    const y = h - ((v - min) / range) * h;
-    return `${x},${y}`;
-  });
-  const pathD = `M${points.join(" L")}`;
+
+  const getX = (i: number) => (i / (data.length - 1)) * w;
+  const getY = (v: number) => padding.top + chartH - ((v - min) / range) * chartH;
+
+  const points = data.map((v, i) => ({ x: getX(i), y: getY(v), value: v }));
+
+  // Build smooth cubic bezier path
+  let pathD = `M${points[0].x},${points[0].y}`;
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1];
+    const curr = points[i];
+    const cpx1 = prev.x + (curr.x - prev.x) * 0.5;
+    const cpx2 = prev.x + (curr.x - prev.x) * 0.5;
+    pathD += ` C${cpx1},${prev.y} ${cpx2},${curr.y} ${curr.x},${curr.y}`;
+  }
+
   const areaD = `${pathD} L${w},${h} L0,${h} Z`;
+  const lastPoint = points[points.length - 1];
+
   return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="overflow-visible">
+    <svg width={w} height={h + 25} viewBox={`0 0 ${w} ${h + 25}`} className="overflow-visible">
       <defs>
         <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.3" />
+          <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.25" />
           <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
         </linearGradient>
+        <filter id="dotGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
       </defs>
+
+      {/* Vertical dotted lines from each point to bottom */}
+      {points.map((p, i) => (
+        <line
+          key={`vline-${i}`}
+          x1={p.x}
+          y1={p.y}
+          x2={p.x}
+          y2={h}
+          stroke="var(--color-primary)"
+          strokeWidth="0.5"
+          strokeDasharray="2,3"
+          opacity="0.12"
+        />
+      ))}
+
+      {/* Area fill */}
       <path d={areaD} fill="url(#chartGrad)" />
-      <path d={pathD} fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" className="chart-line" />
-      <circle cx={(data.length - 1) / (data.length - 1) * w} cy={h - ((data[data.length - 1] - min) / range) * h} r="3" fill="var(--color-primary)" className="glow-dot" style={{ animation: "none" }} />
+
+      {/* Smooth line */}
+      <path
+        d={pathD}
+        fill="none"
+        stroke="var(--color-primary)"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.9"
+      />
+
+      {/* Dots at each data point */}
+      {points.map((p, i) => {
+        const isLast = i === points.length - 1;
+        return (
+          <g key={`dot-${i}`}>
+            <circle
+              cx={p.x}
+              cy={p.y}
+              r={isLast ? 5 : 3}
+              fill={isLast ? "var(--color-primary)" : "var(--color-background)"}
+              stroke="var(--color-primary)"
+              strokeWidth={isLast ? 0 : 1.5}
+              filter={isLast ? "url(#dotGlow)" : undefined}
+            />
+            {isLast && (
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r={2.5}
+                fill="var(--color-primary-foreground)"
+              />
+            )}
+          </g>
+        );
+      })}
+
+      {/* Tooltip on last point */}
+      <g transform={`translate(${lastPoint.x}, ${lastPoint.y - 14})`}>
+        {/* Tooltip background */}
+        <rect
+          x="-20"
+          y="-24"
+          width="40"
+          height="20"
+          rx="6"
+          fill="rgba(10, 14, 10, 0.85)"
+          stroke="rgba(163, 230, 53, 0.25)"
+          strokeWidth="1"
+        />
+        {/* Tooltip text */}
+        <text
+          x="0"
+          y="-10"
+          textAnchor="middle"
+          fill="var(--color-primary)"
+          fontSize="10"
+          fontWeight="600"
+        >
+          {Math.round(lastPoint.value)}%
+        </text>
+        {/* Tooltip arrow */}
+        <path
+          d={`M-3,-4 L0,-1 L3,-4`}
+          fill="rgba(10, 14, 10, 0.85)"
+          stroke="rgba(163, 230, 53, 0.25)"
+          strokeWidth="0"
+        />
+        <line x1="0" y1="-4" x2="0" y2="-1" stroke="rgba(10, 14, 10, 0.85)" strokeWidth="2" />
+      </g>
     </svg>
   );
 }
