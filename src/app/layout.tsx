@@ -42,7 +42,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`dark ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-screen bg-background text-foreground">
-        <div className="bg-scene" aria-hidden="true" />
         <TooltipProvider>
           <div className="relative z-10 flex min-h-screen">
             <Sidebar />
