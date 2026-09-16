@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getSupabase } from "@/lib/supabase/client";
 import type { Player } from "@/types/tennis";
-import { Search } from "lucide-react";
+import { Search, Trash2 } from "lucide-react";
 import { CountryFlag, HandEmoji } from "@/components/country-flag";
 
 function PlayersContent() {
@@ -15,6 +15,7 @@ function PlayersContent() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(initialQuery);
   const [countryFilter, setCountryFilter] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadPlayers() {
@@ -34,6 +35,16 @@ function PlayersContent() {
   );
 
   const uniqueCountries = [...new Set(players.map((p) => p.country_code).filter(Boolean))].sort();
+
+  async function deletePlayer(id: string) {
+    try {
+      await fetch(`/api/players/${id}`, { method: "DELETE" });
+      setPlayers(players.filter((p) => p.id !== id));
+      setDeleteConfirm(null);
+    } catch (error) {
+      console.error("Failed to delete player:", error);
+    }
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -106,52 +117,80 @@ function PlayersContent() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 stagger-children">
-          {filtered.map((player) => (
-            <Link
-              key={player.id}
-              href={`/players/${player.id}`}
-              className="glass stat-card p-5 group"
-            >
-              <div className="flex items-center gap-3">
-                {"avatar_url" in player && (player as any).avatar_url ? (
-                  <img
-                    src={(player as any).avatar_url}
-                    alt={player.name}
-                    className="w-10 h-10 rounded-full object-cover border border-primary/10 shrink-0 group-hover:shadow-[0_0_15px_rgba(163,230,53,0.1)] transition-all"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0 group-hover:bg-primary/20 group-hover:shadow-[0_0_15px_rgba(163,230,53,0.1)] transition-all">
-                    {player.name.charAt(0)}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    {"ranking" in player && (player as any).ranking && (
-                      <span className="text-[10px] font-mono text-primary/50 shrink-0">#{(player as any).ranking}</span>
+          {filtered.map((player) => {
+            const isDeleting = deleteConfirm === player.id;
+            return (
+              <div key={player.id} className="glass stat-card p-5 group relative">
+                <Link href={`/players/${player.id}`} className="block">
+                  <div className="flex items-center gap-3">
+                    {"avatar_url" in player && (player as any).avatar_url ? (
+                      <img
+                        src={(player as any).avatar_url}
+                        alt={player.name}
+                        className="w-10 h-10 rounded-full object-cover border border-primary/10 shrink-0 group-hover:shadow-[0_0_15px_rgba(163,230,53,0.1)] transition-all"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0 group-hover:bg-primary/20 group-hover:shadow-[0_0_15px_rgba(163,230,53,0.1)] transition-all">
+                        {player.name.charAt(0)}
+                      </div>
                     )}
-                    <p className="font-medium truncate text-sm">{player.name}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        {"ranking" in player && (player as any).ranking && (
+                          <span className="text-[10px] font-mono text-primary/50 shrink-0">#{(player as any).ranking}</span>
+                        )}
+                        <p className="font-medium truncate text-sm">{player.name}</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <CountryFlag code={player.country_code} />
+                        <span>{player.country_code}</span>
+                        <span>·</span>
+                        <HandEmoji hand={player.hand} />
+                        <span>{player.hand === "L" ? "Left" : "Right"}</span>
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                    <CountryFlag code={player.country_code} />
-                    <span>{player.country_code}</span>
-                    <span>·</span>
-                    <HandEmoji hand={player.hand} />
-                    <span>{player.hand === "L" ? "Left" : "Right"}</span>
-                  </p>
+                  {player.strengths?.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      {player.strengths!.slice(0, 3).map((s) => (
+                        <span key={s} className="text-[11px] px-2 py-0.5 rounded-full bg-primary/10 text-primary capitalize">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </Link>
+                {/* Delete button */}
+                <div className="absolute top-3 right-3">
+                  {isDeleting ? (
+                    <div className="flex items-center gap-1.5 bg-black/80 backdrop-blur-sm px-2 py-1.5 rounded-lg">
+                      <span className="text-[10px] text-muted-foreground">Delete?</span>
+                      <button
+                        onClick={(e) => { e.preventDefault(); deletePlayer(player.id); }}
+                        className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                      >
+                        Yes
+                      </button>
+                      <button
+                        onClick={(e) => { e.preventDefault(); setDeleteConfirm(null); }}
+                        className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08] transition-colors"
+                      >
+                        No
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={(e) => { e.preventDefault(); setDeleteConfirm(player.id); }}
+                      className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-all"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
-              {player.strengths?.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-3">
-                  {player.strengths!.slice(0, 3).map((s) => (
-                    <span key={s} className="text-[11px] px-2 py-0.5 rounded-full bg-primary/10 text-primary capitalize">
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </Link>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
