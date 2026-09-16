@@ -77,14 +77,14 @@ function PlayersContent() {
         <img
           src="/players-bg-mobile.avif"
           alt=""
-          className="w-full h-full object-cover md:hidden opacity-60"
+          className="w-full h-full object-cover md:hidden"
         />
         <img
           src="/players-bg.avif"
           alt=""
           className="w-full h-full object-cover hidden md:block"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/30 to-background md:from-background/80 md:via-background/60 md:to-background" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background md:from-background/80 md:via-background/60 md:to-background" />
       </div>
 
       <div className="flex items-center justify-between">

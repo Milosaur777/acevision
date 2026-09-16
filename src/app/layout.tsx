@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Sidebar } from "@/components/sidebar";
+import PageTransition from "@/components/page-transition";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -47,7 +48,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Sidebar />
             <main className="flex-1 overflow-y-auto md:ml-64 pb-20 md:pb-0">
               <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                {children}
+                <PageTransition>{children}</PageTransition>
               </div>
             </main>
           </div>
