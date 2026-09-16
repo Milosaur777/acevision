@@ -310,7 +310,7 @@ export default function HomePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.03]">
-                  {players.slice(0, 10).map((player, i) => (
+                  {players.slice(0, 17).map((player, i) => (
                     <tr key={player.id} className="table-row group">
                       <td className="px-6 py-3 font-mono text-muted-foreground/40">{i + 1}</td>
                       <td className="px-4 py-3">
