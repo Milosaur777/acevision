@@ -48,18 +48,27 @@ export async function POST(request: Request) {
 
       if (res.ok) {
         const data = await res.json();
-        await supabase.from("predictions").insert({
+        // Map predicted winner name to player ID
+        const winnerName = data.predicted_winner || data.predicted_winner_name || "";
+        const predicted_winner_id = winnerName.toLowerCase().includes(player2.name.toLowerCase()) 
+          ? player2_id 
+          : player1_id;
+        
+        const predictionData = {
           player1_id,
           player2_id,
-          predicted_winner_id: data.predicted_winner_id,
+          predicted_winner_id,
           confidence: data.confidence,
           reasoning: data.reasoning,
           tactics_player1: data.tactics_player1,
           tactics_player2: data.tactics_player2,
           surface,
+          match_id: body.match_id || null,
           ai_model: "n8n-gemini-flash",
-        });
-        return NextResponse.json(data);
+        };
+        
+        await supabase.from("predictions").insert(predictionData);
+        return NextResponse.json({ ...data, predicted_winner_id });
       }
     } catch {
       // n8n unavailable, fall through to direct OpenRouter
@@ -123,18 +132,27 @@ Return JSON exactly like this:
         const jsonMatch = content.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           const parsed = JSON.parse(jsonMatch[0]);
-          await supabase.from("predictions").insert({
+          // Map predicted winner name to player ID
+          const winnerName = parsed.predicted_winner || parsed.predicted_winner_name || "";
+          const predicted_winner_id = winnerName.toLowerCase().includes(player2.name.toLowerCase()) 
+            ? player2_id 
+            : player1_id;
+          
+          const predictionData = {
             player1_id,
             player2_id,
-            predicted_winner_id: parsed.predicted_winner_id,
+            predicted_winner_id,
             confidence: parsed.confidence,
             reasoning: parsed.reasoning,
             tactics_player1: parsed.tactics_player1,
             tactics_player2: parsed.tactics_player2,
             surface,
+            match_id: body.match_id || null,
             ai_model: "gemini-2.0-flash-direct",
-          });
-          return NextResponse.json(parsed);
+          };
+          
+          await supabase.from("predictions").insert(predictionData);
+          return NextResponse.json({ ...parsed, predicted_winner_id });
         }
       }
     } catch {

@@ -70,16 +70,18 @@ export default function HomePage() {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [recentMatches, setRecentMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
+  const [accuracy, setAccuracy] = useState({ accuracy: 0, total_resolved: 0, chart_data: [] as number[], correct_count: 0, message: "" });
 
   const [totalPlayers, setTotalPlayers] = useState(0);
 
   useEffect(() => {
     async function loadData() {
       const db = getSupabase();
-      const [countRes, predictionsRes, matchesRes] = await Promise.all([
+      const [countRes, predictionsRes, matchesRes, accuracyRes] = await Promise.all([
         db.from("players").select("*", { count: "exact", head: true }),
         db.from("predictions").select("*").order("created_at", { ascending: false }).limit(20),
         db.from("matches").select("*").order("tourney_date", { ascending: false }).limit(10),
+        fetch("/api/accuracy").then(r => r.json()).catch(() => ({ accuracy: 0, total_resolved: 0, chart_data: [], message: "Unavailable" })),
       ]);
       // Try ranking first, fallback to name if column doesn't exist
       let playersRes = await db.from("players").select("*").order("ranking", { ascending: true, nullsFirst: false }).order("name").limit(15);
@@ -90,6 +92,7 @@ export default function HomePage() {
       setPlayers(playersRes.data ?? []);
       setPredictions(predictionsRes.data ?? []);
       setRecentMatches(matchesRes.data ?? []);
+      setAccuracy(accuracyRes);
       setLoading(false);
     }
     loadData();
@@ -273,19 +276,34 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Prediction Confidence Chart */}
+          {/* Prediction Accuracy Chart */}
           <div className="glass p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Activity className="h-4 w-4 text-primary/60" />
-                <h2 className="font-semibold text-sm">Prediction Confidence</h2>
+                <h2 className="font-semibold text-sm">Prediction Accuracy</h2>
               </div>
               <span className="ai-badge text-[10px] font-bold text-primary px-2.5 py-1 rounded-lg uppercase tracking-wider">AI Insights</span>
             </div>
             <div className="flex items-end gap-3 mb-3">
-              <span className="text-3xl font-bold text-primary">72%</span>
+              {accuracy.total_resolved >= 2 ? (
+                <>
+                  <span className="text-3xl font-bold text-primary">{accuracy.accuracy}%</span>
+                  <span className="text-xs text-muted-foreground/50 mb-1">
+                    {accuracy.correct_count}/{accuracy.total_resolved} correct
+                  </span>
+                </>
+              ) : (
+                <span className="text-lg font-bold text-muted-foreground/50">Need more data</span>
+              )}
             </div>
-            <MiniLineChart data={confData} />
+            {accuracy.chart_data.length >= 2 ? (
+              <MiniLineChart data={accuracy.chart_data} />
+            ) : (
+              <div className="h-16 flex items-center justify-center">
+                <p className="text-xs text-muted-foreground/30">Make match predictions to see accuracy</p>
+              </div>
+            )}
             <div className="flex justify-between text-[10px] text-muted-foreground/30 mt-2 font-mono">
               <span>0%</span>
               <span>50%</span>
