@@ -118,10 +118,12 @@ export async function POST(request: Request) {
       // Create missing players
       if (!p1) {
         const country = fixture.player1?.countryAcr || "UNK";
+        const apiPlayerId = fixture.player1?.id?.toString() || `auto-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
         try {
           const { data: newPlayer, error: createError } = await supabase
             .from("players")
-            .insert({
+            .upsert({
+              id: apiPlayerId,
               name: homePlayer,
               country_code: country,
               hand: "R",
@@ -152,10 +154,12 @@ export async function POST(request: Request) {
 
       if (!p2) {
         const country = fixture.player2?.countryAcr || "UNK";
+        const apiPlayerId = fixture.player2?.id?.toString() || `auto-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
         try {
           const { data: newPlayer, error: createError } = await supabase
             .from("players")
-            .insert({
+            .upsert({
+              id: apiPlayerId,
               name: awayPlayer,
               country_code: country,
               hand: "R",
