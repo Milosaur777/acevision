@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Upload, Download, Check, AlertCircle, ExternalLink } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Upload, Download, Check, AlertCircle, ExternalLink, Trash2 } from "lucide-react";
+import { getSupabase } from "@/lib/supabase/client";
+import type { Match } from "@/types/tennis";
 import { cn } from "@/lib/utils";
 
 const CSV_SOURCES = [
@@ -17,6 +19,17 @@ export default function ImportPage() {
   const [preview, setPreview] = useState<string[][]>([]);
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [recentMatches, setRecentMatches] = useState<Match[]>([]);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadMatches() {
+      const db = getSupabase();
+      const { data } = await db.from("matches").select("*").order("tourney_date", { ascending: false }).limit(20);
+      setRecentMatches(data ?? []);
+    }
+    loadMatches();
+  }, []);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0];
@@ -151,6 +164,72 @@ export default function ImportPage() {
           <p className="text-sm">{result.message}</p>
         </div>
       )}
+
+      {/* Recent Imports */}
+      <div className="glass">
+        <div className="px-5 py-4 border-b border-white/[0.04] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Download className="h-4 w-4 text-primary/60" />
+            <h2 className="font-semibold text-sm">Recent Imports</h2>
+          </div>
+          <span className="text-xs text-muted-foreground">{recentMatches.length} matches</span>
+        </div>
+        <div className="px-4 py-2 space-y-1">
+          {recentMatches.length === 0 ? (
+            <div className="py-8 text-center">
+              <p className="text-muted-foreground text-sm">No matches imported yet</p>
+            </div>
+          ) : (
+            recentMatches.map((match) => {
+              const isDeleting = deleteConfirm === match.id;
+              return (
+                <div key={match.id} className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors group">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium font-mono">{match.score || "vs"}</p>
+                    <p className="text-xs text-muted-foreground/50">
+                      {match.tourney_name} · {match.surface} · {match.tourney_date?.slice(0, 4)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {isDeleting ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-muted-foreground">Delete?</span>
+                        <button
+                          onClick={async () => {
+                            try {
+                              await fetch(`/api/matches/${match.id}`, { method: "DELETE" });
+                              setRecentMatches(recentMatches.filter((m) => m.id !== match.id));
+                              setDeleteConfirm(null);
+                            } catch (error) {
+                              console.error("Failed to delete match:", error);
+                            }
+                          }}
+                          className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                        >
+                          Yes
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm(null)}
+                          className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08] transition-colors"
+                        >
+                          No
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setDeleteConfirm(match.id)}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-all"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
     </div>
   );
 }
