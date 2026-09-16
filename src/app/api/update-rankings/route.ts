@@ -32,10 +32,10 @@ export async function POST() {
     const headerMap = new Map<string, number>();
     headers.forEach((h, i) => headerMap.set(h.toLowerCase(), i));
 
-    // Extract latest ranking for each player from CSV
+    // Extract LATEST ranking for each player from CSV (iterate in reverse)
     const playerRankings = new Map<string, number>();
 
-    for (let i = 1; i < lines.length; i++) {
+    for (let i = lines.length - 1; i >= 1; i--) {
       const cols = parseCsvLine(lines[i]);
       if (cols.length < 10) continue;
 
