@@ -230,7 +230,7 @@ export default function HomePage() {
 
   return (
     <div className="space-y-5 animate-fade-in relative">
-      <div className="fixed inset-0 -z-10 bg-scene" aria-hidden="true" />
+      <div className="bg-scene" aria-hidden="true" />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
