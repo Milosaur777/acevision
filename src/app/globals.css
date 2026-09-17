@@ -437,17 +437,18 @@ body {
 }
 
 /* Subtle inactive hover */
-.nav-item:not([aria-current="page"]):hover {
+.nav-item:not([aria-current="page"]):not([aria-selected="true"]):hover {
   color: rgba(255, 255, 255, 0.9);
   background: rgba(255, 255, 255, 0.035);
 }
 
-.nav-item:not([aria-current="page"]):hover .nav-item__icon {
+.nav-item:not([aria-current="page"]):not([aria-selected="true"]):hover .nav-item__icon {
   color: rgba(190, 242, 100, 0.82);
 }
 
 /* Selected glass capsule */
-.nav-item[aria-current="page"] {
+.nav-item[aria-current="page"],
+.nav-item[aria-selected="true"] {
   color: rgba(255, 255, 255, 0.96);
 
   background:
@@ -486,7 +487,8 @@ body {
 }
 
 /* Interior reflection */
-.nav-item[aria-current="page"]::before {
+.nav-item[aria-current="page"]::before,
+.nav-item[aria-selected="true"]::before {
   content: "";
   position: absolute;
   z-index: -1;
@@ -515,7 +517,8 @@ body {
 }
 
 /* Animated precision light travelling around the rim */
-.nav-item[aria-current="page"]::after {
+.nav-item[aria-current="page"]::after,
+.nav-item[aria-selected="true"]::after {
   content: "";
   position: absolute;
   z-index: 2;
@@ -561,7 +564,8 @@ body {
     nav-light-pulse 4.3s ease-in-out infinite;
 }
 
-.nav-item[aria-current="page"] .nav-item__icon {
+.nav-item[aria-current="page"] .nav-item__icon,
+.nav-item[aria-selected="true"] .nav-item__icon {
   color: rgb(190 242 100);
 
   filter:
@@ -570,7 +574,8 @@ body {
 }
 
 /* Pressed interaction */
-.nav-item[aria-current="page"]:active {
+.nav-item[aria-current="page"]:active,
+.nav-item[aria-selected="true"]:active {
   transform: scale(0.985);
 
   box-shadow:

@@ -147,14 +147,16 @@ export default function AdminPage() {
       </div>
 
       {/* Tab nav */}
-      <div className="flex gap-1 glass p-1">
+      <div className="flex gap-2">
         {tabs.map((t) => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            className={cn(
-              "flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex-1 justify-center",
-              tab === t.key ? "bg-primary/15 text-primary shadow-[0_0_12px_rgba(163,230,53,0.08)]" : "text-muted-foreground hover:text-foreground hover:bg-white/[0.03]"
-            )}>
-            {t.icon} {t.label}
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            aria-selected={tab === t.key}
+            className="nav-item flex-1 justify-center"
+          >
+            <span className="nav-item__icon">{t.icon}</span>
+            {t.label}
           </button>
         ))}
       </div>
