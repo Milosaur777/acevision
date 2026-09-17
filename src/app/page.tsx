@@ -180,12 +180,14 @@ export default function HomePage() {
   const [accuracy, setAccuracy] = useState({ accuracy: 0, total_resolved: 0, total_predictions: 0, chart_data: [] as number[], correct_count: 0, message: "" });
 
   const [totalPlayers, setTotalPlayers] = useState(0);
+  const [totalMatches, setTotalMatches] = useState(0);
 
   useEffect(() => {
     async function loadData() {
       const db = getSupabase();
-      const [countRes, predictionsRes, matchesRes, accuracyRes] = await Promise.all([
+      const [countRes, matchCountRes, predictionsRes, matchesRes, accuracyRes] = await Promise.all([
         db.from("players").select("*", { count: "exact", head: true }),
+        db.from("matches").select("*", { count: "exact", head: true }),
         db.from("predictions").select("*").order("created_at", { ascending: false }).limit(20),
         db.from("matches").select("*").order("tourney_date", { ascending: false }).limit(10),
         fetch("/api/accuracy").then(r => r.json()).catch(() => ({ accuracy: 0, total_resolved: 0, chart_data: [], message: "Unavailable" })),
@@ -196,6 +198,7 @@ export default function HomePage() {
         playersRes = await db.from("players").select("*").order("name");
       }
       setTotalPlayers(countRes.count ?? 0);
+      setTotalMatches(matchCountRes.count ?? 0);
       setPlayers(playersRes.data ?? []);
       setPredictions(predictionsRes.data ?? []);
       setRecentMatches(matchesRes.data ?? []);
@@ -224,7 +227,7 @@ export default function HomePage() {
   const stats = [
     { label: "Total Players", value: totalPlayers, sub: "Active in database", icon: Users, spark: sparkData1 },
     { label: "AI Predictions", value: predictions.length, sub: "Predictions generated", icon: Target, spark: sparkData2 },
-    { label: "Matches Tracked", value: recentMatches.length, sub: "Total matches analyzed", icon: Trophy, spark: sparkData3 },
+    { label: "Matches Tracked", value: totalMatches, sub: "Total matches analyzed", icon: Trophy, spark: sparkData3 },
     { label: "Win Rate", value: "—%", sub: "Not enough data yet", icon: Zap, spark: null },
   ];
 
