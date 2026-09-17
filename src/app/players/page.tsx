@@ -88,13 +88,12 @@ function PlayersContent() {
         <button
           onClick={updateRankings}
           disabled={updatingRankings}
-          aria-selected="true"
-          className="nav-item nav-item--dark-text disabled:opacity-50"
+          className="px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:shadow-[0_0_20px_rgba(163,230,53,0.3)] transition-all disabled:opacity-50 flex items-center gap-2"
         >
           {updatingRankings ? (
-            <><RefreshCw className="nav-item__icon animate-spin" /> Updating...</>
+            <><RefreshCw className="h-4 w-4 animate-spin" /> Updating...</>
           ) : (
-            <><Trophy className="nav-item__icon" /> Sync Rankings</>
+            <><Trophy className="h-4 w-4" /> Sync Rankings</>
           )}
         </button>
       </div>

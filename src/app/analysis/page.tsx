@@ -159,12 +159,11 @@ export default function AnalysisPage() {
               </div>
               <button onClick={runAnalysis}
                 disabled={!player1Id || !player2Id || player1Id === player2Id || loading}
-                aria-selected="true"
-                className="nav-item nav-item--dark-text disabled:opacity-50 disabled:cursor-not-allowed">
+                className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:shadow-[0_0_20px_rgba(163,230,53,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                 {loading ? (
                   <><div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> Analyzing...</>
                 ) : (
-                  <><Swords className="nav-item__icon" /> Run Analysis</>
+                  <><Swords className="h-4 w-4" /> Run Analysis</>
                 )}
               </button>
             </div>
