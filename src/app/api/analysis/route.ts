@@ -34,9 +34,15 @@ export async function POST(request: Request) {
   }
 
   // Try n8n webhook first
-  if (N8N_BASE) {
+  const n8nUrls = [
+    N8N_BASE,
+    "https://trinetraos.com/webhook",
+    "https://trinetraos.com",
+  ].filter(Boolean);
+
+  for (const base of n8nUrls) {
     try {
-      const res = await fetch(`${N8N_BASE}/tennis-analysis`, {
+      const res = await fetch(`${base}/tennis-analysis`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
