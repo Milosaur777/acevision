@@ -133,7 +133,7 @@ export default function AdminPage() {
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: "add-player", label: "Add Player", icon: <UserPlus className="h-4 w-4" /> },
     { key: "add-match", label: "Add Match", icon: <Trophy className="h-4 w-4" /> },
-    { key: "notes", label: "Notes & Attributes", icon: <Save className="h-4 w-4" /> },
+    { key: "notes", label: "Add Notes", icon: <Save className="h-4 w-4" /> },
   ];
 
   const inputCls = "w-full glass px-4 py-3 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all";
