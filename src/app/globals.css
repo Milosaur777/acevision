@@ -39,6 +39,12 @@
   --animate-float: float 6s ease-in-out infinite;
 }
 
+@property --flare-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -132,6 +138,11 @@ body {
 /* Premium glass morphism — dark smoked glass */
 .ace-glass {
   --radius: 24px;
+  --flare-angle: 0deg;
+  --flare-duration: 14s;
+  --flare-delay: 0s;
+  --flare-opacity: 0.75;
+  --flare-direction: normal;
 
   position: relative;
   isolation: isolate;
@@ -209,33 +220,127 @@ body {
     );
 }
 
-/* Precision highlights around the rim */
+/* Animated perimeter light beam */
 .ace-glass::after {
   content: "";
   position: absolute;
+  z-index: 3;
   pointer-events: none;
   inset: 0;
+  padding: 1px;
   border-radius: inherit;
 
-  background:
-    radial-gradient(
-      24px 5px at 82% 0%,
-      rgba(255, 255, 255, 0.95),
-      transparent 70%
-    ),
-    radial-gradient(
-      5px 24px at 100% 23%,
-      rgba(255, 255, 255, 0.68),
-      transparent 70%
-    ),
-    radial-gradient(
-      22px 5px at 14% 100%,
-      rgba(255, 255, 255, 0.65),
-      transparent 70%
-    );
+  background: conic-gradient(
+    from var(--flare-angle),
 
-  filter: blur(0.4px);
-  opacity: 0.8;
+    transparent 0deg,
+    transparent 245deg,
+
+    rgba(255, 255, 255, 0.02) 255deg,
+    rgba(255, 255, 255, 0.3) 261deg,
+    rgba(255, 255, 255, 0.95) 266deg,
+    rgba(220, 255, 230, 0.42) 271deg,
+    transparent 279deg,
+
+    transparent 318deg,
+
+    rgba(163, 230, 53, 0.03) 324deg,
+    rgba(210, 255, 225, 0.5) 330deg,
+    transparent 337deg
+  );
+
+  /* Cut out the middle so only the border remains */
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+
+  filter:
+    brightness(1.35)
+    drop-shadow(0 0 3px rgba(225, 255, 235, 0.7));
+
+  opacity: var(--flare-opacity);
+
+  animation:
+    edge-flare-travel var(--flare-duration) linear
+      var(--flare-delay) infinite var(--flare-direction),
+    edge-flare-breathe 4.7s ease-in-out
+      calc(var(--flare-delay) * 0.4) infinite,
+    edge-flare-drift 7.9s ease-in-out
+      calc(var(--flare-delay) * 0.7) infinite alternate;
+}
+
+@keyframes edge-flare-travel {
+  from {
+    --flare-angle: 0deg;
+  }
+  to {
+    --flare-angle: 360deg;
+  }
+}
+
+@keyframes edge-flare-breathe {
+  0%, 100% {
+    opacity: calc(var(--flare-opacity) * 0.25);
+    filter:
+      brightness(0.9)
+      drop-shadow(0 0 1px rgba(225, 255, 235, 0.25));
+  }
+  22% {
+    opacity: var(--flare-opacity);
+  }
+  47% {
+    opacity: calc(var(--flare-opacity) * 0.42);
+  }
+  71% {
+    opacity: calc(var(--flare-opacity) * 0.88);
+    filter:
+      brightness(1.5)
+      drop-shadow(0 0 5px rgba(225, 255, 235, 0.72));
+  }
+}
+
+@keyframes edge-flare-drift {
+  0% {
+    background-size: 100% 100%;
+  }
+  45% {
+    background-size: 104% 98%;
+  }
+  100% {
+    background-size: 98% 103%;
+  }
+}
+
+/* Per-card variation — different timing for each stat card */
+.stagger-children > :nth-child(1) {
+  --flare-duration: 17.3s;
+  --flare-delay: -8.2s;
+  --flare-opacity: 0.62;
+  --flare-direction: normal;
+}
+.stagger-children > :nth-child(2) {
+  --flare-duration: 12.7s;
+  --flare-delay: -2.9s;
+  --flare-opacity: 0.82;
+  --flare-direction: reverse;
+}
+.stagger-children > :nth-child(3) {
+  --flare-duration: 20.4s;
+  --flare-delay: -14.1s;
+  --flare-opacity: 0.54;
+  --flare-direction: normal;
+}
+.stagger-children > :nth-child(4) {
+  --flare-duration: 15.8s;
+  --flare-delay: -6.6s;
+  --flare-opacity: 0.72;
+  --flare-direction: reverse;
 }
 
 /* Emerald-accented variant */
@@ -255,6 +360,14 @@ body {
     --radius: 18px;
     backdrop-filter: blur(16px) saturate(125%);
     -webkit-backdrop-filter: blur(16px) saturate(125%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ace-glass::after {
+    animation: none;
+    --flare-angle: 225deg;
+    opacity: 0.45;
   }
 }
 
