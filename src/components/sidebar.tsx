@@ -18,7 +18,7 @@ const navSections = [
     label: "MANAGEMENT",
     items: [
       { href: "/admin", label: "Admin", icon: Settings },
-      { href: "/import", label: "Import Data", icon: Upload },
+      { href: "/import", label: "Import", icon: Upload },
     ],
   },
 ];
