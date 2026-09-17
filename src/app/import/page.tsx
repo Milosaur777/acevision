@@ -207,8 +207,8 @@ export default function ImportPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {CSV_SOURCES.map((source) => (
             <button key={source.url} disabled={importing} onClick={() => downloadAndImport(source)}
-              className="flex items-center gap-2 px-4 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:shadow-[0_0_15px_rgba(163,230,53,0.25)] transition-all disabled:opacity-50 text-left">
-              <Download className="h-4 w-4 shrink-0" />
+              className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/[0.04] text-foreground text-sm font-medium hover:bg-white/[0.07] transition-all disabled:opacity-50 text-left border border-white/[0.04]">
+              <Download className="h-4 w-4 shrink-0 text-primary" />
               {source.label}
             </button>
           ))}
