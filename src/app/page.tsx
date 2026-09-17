@@ -257,7 +257,7 @@ export default function HomePage() {
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div key={stat.label} className="glass stat-card p-5 flex flex-col gap-2">
+            <div key={stat.label} className="ace-glass p-5 flex flex-col gap-2">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-xl bg-primary/10 border border-primary/10">
                   <Icon className="h-4 w-4 text-primary" />

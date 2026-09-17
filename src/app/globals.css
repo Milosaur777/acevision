@@ -129,6 +129,135 @@ body {
   border-right: 1px solid rgba(163, 230, 53, 0.06);
 }
 
+/* Premium glass morphism — dark smoked glass */
+.ace-glass {
+  --radius: 24px;
+
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: var(--radius);
+
+  /* Dark smoked-glass body */
+  background:
+    linear-gradient(
+      115deg,
+      rgba(255, 255, 255, 0.075) 0%,
+      rgba(255, 255, 255, 0.025) 28%,
+      rgba(5, 10, 8, 0.58) 58%,
+      rgba(2, 6, 4, 0.76) 100%
+    );
+
+  /* Actual glass distortion */
+  backdrop-filter: blur(22px) saturate(135%);
+  -webkit-backdrop-filter: blur(22px) saturate(135%);
+
+  /* Fine outer rim */
+  border: 1px solid rgba(225, 255, 238, 0.18);
+
+  box-shadow:
+    /* Bright inner top rim */
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+
+    /* Dark inner lower edge */
+    inset 0 -1px 0 rgba(0, 0, 0, 0.8),
+
+    /* Soft glass volume */
+    inset 14px 0 32px rgba(255, 255, 255, 0.025),
+    inset -18px 0 38px rgba(0, 0, 0, 0.34),
+
+    /* Separation from background */
+    0 18px 55px rgba(0, 0, 0, 0.38),
+
+    /* Emerald ambient glow */
+    0 0 32px rgba(132, 204, 22, 0.025);
+
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+}
+.ace-glass:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.8),
+    inset 14px 0 32px rgba(255, 255, 255, 0.035),
+    inset -18px 0 38px rgba(0, 0, 0, 0.4),
+    0 22px 65px rgba(0, 0, 0, 0.45),
+    0 0 40px rgba(132, 204, 22, 0.04);
+}
+
+/* Second rim + broad reflection */
+.ace-glass::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  inset: 3px;
+  border-radius: calc(var(--radius) - 3px);
+
+  border: 1px solid rgba(255, 255, 255, 0.07);
+
+  background:
+    radial-gradient(
+      ellipse at 10% 10%,
+      rgba(255, 255, 255, 0.11),
+      transparent 36%
+    ),
+    linear-gradient(
+      105deg,
+      rgba(255, 255, 255, 0.05),
+      transparent 32%
+    );
+}
+
+/* Precision highlights around the rim */
+.ace-glass::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  inset: 0;
+  border-radius: inherit;
+
+  background:
+    radial-gradient(
+      24px 5px at 82% 0%,
+      rgba(255, 255, 255, 0.95),
+      transparent 70%
+    ),
+    radial-gradient(
+      5px 24px at 100% 23%,
+      rgba(255, 255, 255, 0.68),
+      transparent 70%
+    ),
+    radial-gradient(
+      22px 5px at 14% 100%,
+      rgba(255, 255, 255, 0.65),
+      transparent 70%
+    );
+
+  filter: blur(0.4px);
+  opacity: 0.8;
+}
+
+/* Emerald-accented variant */
+.ace-glass--active {
+  border-color: rgba(163, 230, 53, 0.24);
+
+  box-shadow:
+    inset 0 1px 0 rgba(220, 255, 225, 0.25),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.8),
+    inset 12px 0 30px rgba(163, 230, 53, 0.035),
+    0 18px 55px rgba(0, 0, 0, 0.42),
+    0 0 35px rgba(132, 204, 22, 0.055);
+}
+
+@media (max-width: 768px) {
+  .ace-glass {
+    --radius: 18px;
+    backdrop-filter: blur(16px) saturate(125%);
+    -webkit-backdrop-filter: blur(16px) saturate(125%);
+  }
+}
+
 /* Stat card glow on hover */
 .stat-card {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
