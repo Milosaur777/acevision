@@ -584,6 +584,17 @@ body {
     0 0 15px rgba(132, 204, 22, 0.13);
 }
 
+/* Dark text variant for action buttons */
+.nav-item--dark-text[aria-selected="true"],
+.nav-item--dark-text[aria-current="page"] {
+  color: var(--color-primary-foreground);
+}
+.nav-item--dark-text[aria-selected="true"] .nav-item__icon,
+.nav-item--dark-text[aria-current="page"] .nav-item__icon {
+  color: var(--color-primary-foreground);
+  filter: none;
+}
+
 @keyframes nav-light-travel {
   from {
     --nav-light-angle: 0deg;

@@ -113,17 +113,15 @@ export default function AnalysisPage() {
       <div className="flex gap-2">
         <button
           onClick={() => setActiveTab("new")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            activeTab === "new" ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground hover:text-foreground"
-          }`}
+          aria-selected={activeTab === "new"}
+          className="nav-item flex-1 justify-center"
         >
           New Prediction
         </button>
         <button
           onClick={() => setActiveTab("history")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            activeTab === "history" ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground hover:text-foreground"
-          }`}
+          aria-selected={activeTab === "history"}
+          className="nav-item flex-1 justify-center"
         >
           Prediction History ({predictions.length})
         </button>
@@ -161,11 +159,12 @@ export default function AnalysisPage() {
               </div>
               <button onClick={runAnalysis}
                 disabled={!player1Id || !player2Id || player1Id === player2Id || loading}
-                className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:shadow-[0_0_20px_rgba(163,230,53,0.2)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                aria-selected="true"
+                className="nav-item nav-item--dark-text disabled:opacity-50 disabled:cursor-not-allowed">
                 {loading ? (
                   <><div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> Analyzing...</>
                 ) : (
-                  <><Swords className="h-4 w-4" /> Run Analysis</>
+                  <><Swords className="nav-item__icon" /> Run Analysis</>
                 )}
               </button>
             </div>

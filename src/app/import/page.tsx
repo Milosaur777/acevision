@@ -158,12 +158,13 @@ export default function ImportPage() {
           <button
             onClick={scanMatches}
             disabled={scanning}
-            className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:shadow-[0_0_20px_rgba(163,230,53,0.2)] transition-all disabled:opacity-50 flex items-center gap-2"
+            aria-selected="true"
+            className="nav-item nav-item--dark-text disabled:opacity-50"
           >
             {scanning ? (
               <><div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> Scanning...</>
             ) : (
-              <><Scan className="h-4 w-4" /> Scan Next 14 Days</>
+              <><Scan className="nav-item__icon" /> Scan Next 14 Days</>
             )}
           </button>
           <span className="text-xs text-muted-foreground/50">Requires RapidAPI key</span>
