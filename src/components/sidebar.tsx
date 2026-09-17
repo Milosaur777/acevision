@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Home, Users, BarChart3, Settings, Upload, Search, LogOut } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 const navSections = [
   {
@@ -79,14 +78,10 @@ export function Sidebar() {
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
-                        active
-                          ? "nav-active"
-                          : "text-muted-foreground hover:text-foreground hover:bg-white/[0.03]"
-                      )}
+                      aria-current={active ? "page" : undefined}
+                      className="nav-item"
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="nav-item__icon" />
                       {item.label}
                     </Link>
                   );
@@ -114,7 +109,7 @@ export function Sidebar() {
       </aside>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-white/[0.04]" style={{ background: "rgba(5, 8, 5, 0.92)", backdropFilter: "blur(40px) saturate(1.4)", WebkitBackdropFilter: "blur(40px) saturate(1.4)" }}>
+      <nav className="mobile-nav md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-white/[0.04]" style={{ background: "rgba(5, 8, 5, 0.92)", backdropFilter: "blur(40px) saturate(1.4)", WebkitBackdropFilter: "blur(40px) saturate(1.4)" }}>
         <div className="flex items-center justify-around py-2 px-2">
           {navSections.flatMap((s) => s.items).map((item) => {
             const Icon = item.icon;
@@ -123,12 +118,10 @@ export function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={cn(
-                  "flex flex-col items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-medium transition-all min-w-[52px]",
-                  active ? "text-primary bg-primary/10" : "text-muted-foreground/50"
-                )}
+                aria-current={active ? "page" : undefined}
+                className="nav-item"
               >
-                <Icon className="h-5 w-5" />
+                <Icon className="nav-item__icon" />
                 {item.label}
               </Link>
             );

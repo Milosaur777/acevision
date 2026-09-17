@@ -45,6 +45,12 @@
   initial-value: 0deg;
 }
 
+@property --nav-light-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -381,11 +387,228 @@ body {
   transform: translateY(-2px);
 }
 
-/* Nav active glow */
-.nav-active {
-  background: rgba(163, 230, 53, 0.12);
-  color: var(--color-primary);
-  box-shadow: 0 0 20px rgba(163, 230, 53, 0.08), inset 0 1px 0 rgba(163, 230, 53, 0.1);
+/* ── Navigation items ── */
+
+/* Base navigation item */
+.nav-item {
+  --nav-radius: 15px;
+
+  position: relative;
+  isolation: isolate;
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  width: 100%;
+  min-height: 50px;
+  padding: 0 17px;
+
+  border: 1px solid transparent;
+  border-radius: var(--nav-radius);
+
+  color: rgba(226, 232, 240, 0.64);
+  background: transparent;
+
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+
+  transition:
+    color 220ms ease,
+    background-color 220ms ease,
+    transform 220ms ease,
+    filter 220ms ease;
+}
+
+.nav-item__icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+
+  color: rgba(203, 213, 225, 0.65);
+  stroke-width: 1.8;
+
+  transition:
+    color 220ms ease,
+    filter 220ms ease,
+    transform 220ms ease;
+}
+
+/* Subtle inactive hover */
+.nav-item:not([aria-current="page"]):hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.nav-item:not([aria-current="page"]):hover .nav-item__icon {
+  color: rgba(190, 242, 100, 0.82);
+}
+
+/* Selected glass capsule */
+.nav-item[aria-current="page"] {
+  color: rgba(255, 255, 255, 0.96);
+
+  background:
+    linear-gradient(
+      105deg,
+      rgba(69, 92, 36, 0.42) 0%,
+      rgba(41, 57, 25, 0.5) 45%,
+      rgba(98, 125, 48, 0.48) 100%
+    );
+
+  border-color: rgba(190, 242, 100, 0.72);
+
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+
+  box-shadow:
+    /* Bright beveled upper rim */
+    inset 0 1px 0 rgba(237, 255, 205, 0.32),
+
+    /* Lower glass depth */
+    inset 0 -1px 0 rgba(8, 18, 3, 0.72),
+
+    /* Left-side reflected light */
+    inset 10px 0 24px rgba(190, 242, 100, 0.075),
+
+    /* Close lime illumination */
+    0 0 8px rgba(163, 230, 53, 0.22),
+
+    /* Wide ambient glow */
+    0 0 25px rgba(132, 204, 22, 0.15),
+
+    /* Physical elevation */
+    0 8px 22px rgba(0, 0, 0, 0.35);
+
+  text-shadow: 0 1px 8px rgba(255, 255, 255, 0.08);
+}
+
+/* Interior reflection */
+.nav-item[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+
+  inset: 2px;
+  border-radius: calc(var(--nav-radius) - 2px);
+
+  background:
+    radial-gradient(
+      ellipse 85% 100% at 100% 50%,
+      rgba(190, 242, 100, 0.16),
+      transparent 64%
+    ),
+    linear-gradient(
+      108deg,
+      rgba(255, 255, 255, 0.07) 0%,
+      transparent 28%,
+      transparent 72%,
+      rgba(217, 249, 157, 0.045) 100%
+    );
+
+  box-shadow:
+    inset 0 0 18px rgba(163, 230, 53, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Animated precision light travelling around the rim */
+.nav-item[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+
+  inset: -1px;
+  padding: 1.5px;
+  border-radius: calc(var(--nav-radius) + 1px);
+
+  background: conic-gradient(
+    from var(--nav-light-angle),
+
+    transparent 0deg,
+    transparent 230deg,
+
+    rgba(217, 249, 157, 0.04) 242deg,
+    rgba(236, 252, 203, 0.5) 252deg,
+    rgba(255, 255, 255, 1) 258deg,
+    rgba(190, 242, 100, 0.6) 264deg,
+    transparent 278deg,
+
+    transparent 324deg,
+    rgba(190, 242, 100, 0.3) 332deg,
+    transparent 340deg
+  );
+
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+
+  filter:
+    brightness(1.35)
+    drop-shadow(0 0 4px rgba(190, 242, 100, 0.85));
+
+  animation:
+    nav-light-travel 10s linear infinite,
+    nav-light-pulse 4.3s ease-in-out infinite;
+}
+
+.nav-item[aria-current="page"] .nav-item__icon {
+  color: rgb(190 242 100);
+
+  filter:
+    drop-shadow(0 0 3px rgba(190, 242, 100, 0.7))
+    drop-shadow(0 0 9px rgba(132, 204, 22, 0.28));
+}
+
+/* Pressed interaction */
+.nav-item[aria-current="page"]:active {
+  transform: scale(0.985);
+
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(237, 255, 205, 0.22),
+    0 0 15px rgba(132, 204, 22, 0.13);
+}
+
+@keyframes nav-light-travel {
+  from {
+    --nav-light-angle: 0deg;
+  }
+  to {
+    --nav-light-angle: 360deg;
+  }
+}
+
+@keyframes nav-light-pulse {
+  0%, 100% {
+    opacity: 0.38;
+  }
+  30% {
+    opacity: 0.9;
+  }
+  58% {
+    opacity: 0.52;
+  }
+  76% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-item[aria-current="page"]::after {
+    animation: none;
+    --nav-light-angle: 225deg;
+    opacity: 0.45;
+  }
 }
 
 /* Table rows */
@@ -478,6 +701,186 @@ body {
 .stagger-children > *:nth-child(28) { animation-delay: 920ms; }
 .stagger-children > *:nth-child(29) { animation-delay: 940ms; }
 .stagger-children > *:nth-child(30) { animation-delay: 960ms; }
+
+/* ── Mobile bottom navigation ── */
+@media (max-width: 768px) {
+  .mobile-nav .nav-item {
+    --nav-radius: 13px;
+
+    position: relative;
+    min-width: 68px;
+    min-height: 58px;
+    padding: 8px 9px 7px;
+
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+
+    border-radius: var(--nav-radius);
+    font-size: 10px;
+  }
+
+  .mobile-nav .nav-item__icon {
+    width: 21px;
+    height: 21px;
+  }
+
+  /* Vertical glass: small bright top, large dark body */
+  .mobile-nav .nav-item[aria-current="page"] {
+    color: rgb(190 242 100);
+
+    background:
+      /* Small lime reflection at the top */
+      linear-gradient(
+        180deg,
+        rgba(132, 204, 22, 0.26) 0%,
+        rgba(101, 163, 13, 0.12) 8%,
+        rgba(49, 78, 18, 0.07) 18%,
+        transparent 28%
+      ),
+
+      /* Predominantly dark glass body */
+      linear-gradient(
+        180deg,
+        rgba(10, 18, 7, 0.88) 0%,
+        rgba(5, 11, 5, 0.94) 42%,
+        rgba(2, 7, 4, 0.98) 100%
+      );
+
+    border-color: rgba(163, 230, 53, 0.2);
+
+    backdrop-filter: blur(18px) saturate(135%);
+    -webkit-backdrop-filter: blur(18px) saturate(135%);
+
+    box-shadow:
+      /* Fine bright top rim */
+      inset 0 1px 0 rgba(217, 249, 157, 0.5),
+
+      /* Very restrained side rims */
+      inset 1px 0 0 rgba(190, 242, 100, 0.08),
+      inset -1px 0 0 rgba(190, 242, 100, 0.05),
+
+      /* Dark lower bevel */
+      inset 0 -1px 0 rgba(0, 0, 0, 0.9),
+
+      /* Top-focused ambient glow */
+      0 -5px 18px rgba(132, 204, 22, 0.1),
+
+      /* Physical depth */
+      0 6px 16px rgba(0, 0, 0, 0.36);
+  }
+
+  /* Top illumination—restricted to roughly the upper 12% */
+  .mobile-nav .nav-item[aria-current="page"]::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
+
+    inset: 1px 2px auto;
+    height: 12%;
+    min-height: 9px;
+
+    border-radius:
+      calc(var(--nav-radius) - 2px)
+      calc(var(--nav-radius) - 2px)
+      50% 50%;
+
+    background:
+      radial-gradient(
+        ellipse 80% 130% at 50% 0%,
+        rgba(190, 242, 100, 0.2),
+        rgba(132, 204, 22, 0.06) 48%,
+        transparent 76%
+      );
+
+    filter: blur(2px);
+    opacity: 0.9;
+  }
+
+  /* Small light beam moving along the top edge only */
+  .mobile-nav .nav-item[aria-current="page"]::after {
+    content: "";
+    position: absolute;
+    z-index: 3;
+    pointer-events: none;
+
+    top: -1px;
+    left: 0;
+    width: 34%;
+    height: 2px;
+    padding: 0;
+
+    border-radius: 999px;
+
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(190, 242, 100, 0.4) 25%,
+      rgba(255, 255, 255, 0.95) 52%,
+      rgba(190, 242, 100, 0.55) 70%,
+      transparent
+    );
+
+    -webkit-mask: none;
+    mask: none;
+
+    filter:
+      blur(0.15px)
+      drop-shadow(0 0 3px rgba(190, 242, 100, 0.85))
+      drop-shadow(0 0 7px rgba(132, 204, 22, 0.35));
+
+    animation:
+      mobile-nav-light 7.8s ease-in-out infinite,
+      mobile-nav-light-pulse 3.9s ease-in-out infinite;
+  }
+
+  .mobile-nav .nav-item[aria-current="page"] .nav-item__icon {
+    color: rgb(163 230 53);
+
+    filter:
+      drop-shadow(0 0 3px rgba(163, 230, 53, 0.65))
+      drop-shadow(0 0 8px rgba(132, 204, 22, 0.2));
+  }
+}
+
+@keyframes mobile-nav-light {
+  0% {
+    left: 5%;
+    transform: scaleX(0.55);
+  }
+  28% {
+    left: 54%;
+    transform: scaleX(0.9);
+  }
+  49% {
+    left: 30%;
+    transform: scaleX(0.65);
+  }
+  72% {
+    left: 62%;
+    transform: scaleX(0.5);
+  }
+  100% {
+    left: 5%;
+    transform: scaleX(0.55);
+  }
+}
+
+@keyframes mobile-nav-light-pulse {
+  0%, 100% {
+    opacity: 0.25;
+  }
+  22% {
+    opacity: 0.9;
+  }
+  46% {
+    opacity: 0.4;
+  }
+  75% {
+    opacity: 0.72;
+  }
+}
 
 /* Dark select dropdowns */
 select {
