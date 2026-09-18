@@ -52,7 +52,9 @@ function AnalysisContent() {
       setPlayers(playersData ?? []);
       setPredictions(predictionsData ?? []);
       setMatches(matchesData ?? []);
-      setUpcomingMatches(upcomingData ?? []);
+      // Filter out matches that already have predictions
+      const predictedMatchIds = new Set((predictionsData ?? []).map((p) => p.match_id).filter(Boolean));
+      setUpcomingMatches((upcomingData ?? []).filter((m) => !predictedMatchIds.has(m.id)));
 
       // If match param present, fetch that match and pre-fill
       if (matchParam) {

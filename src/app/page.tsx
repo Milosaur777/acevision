@@ -202,7 +202,9 @@ export default function HomePage() {
       setTotalMatches(matchCountRes.count ?? 0);
       setPlayers(playersRes.data ?? []);
       setPredictions(predictionsRes.data ?? []);
-      setUpcomingMatches(upcomingRes.data ?? []);
+      // Filter out matches that already have predictions
+      const predictedMatchIds = new Set((predictionsRes.data ?? []).map((p) => p.match_id).filter(Boolean));
+      setUpcomingMatches((upcomingRes.data ?? []).filter((m) => !predictedMatchIds.has(m.id)));
       setAccuracy(accuracyRes);
       setLoading(false);
     }
