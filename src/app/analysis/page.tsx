@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { getSupabase } from "@/lib/supabase/client";
 import type { Player, Prediction, Match } from "@/types/tennis";
-import { Zap, Target, TrendingUp, Swords, Brain, Trash2, CheckCircle2, XCircle, Clock, Filter } from "lucide-react";
+import { Zap, Target, TrendingUp, Swords, Brain, Trash2, CheckCircle2, XCircle, Clock, Filter, Calendar } from "lucide-react";
 import PageBackground from "@/components/page-background";
 
 interface AnalysisResult {
@@ -16,13 +17,17 @@ interface AnalysisResult {
 
 type FilterType = "all" | "match" | "hypothetical";
 
-export default function AnalysisPage() {
+function AnalysisContent() {
+  const searchParams = useSearchParams();
+  const matchParam = searchParams.get("match");
+
   const [players, setPlayers] = useState<Player[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [player1Id, setPlayer1Id] = useState("");
   const [player2Id, setPlayer2Id] = useState("");
   const [surface, setSurface] = useState("Hard");
+  const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [activeTab, setActiveTab] = useState<"new" | "history">("new");
@@ -40,9 +45,21 @@ export default function AnalysisPage() {
       setPlayers(playersData ?? []);
       setPredictions(predictionsData ?? []);
       setMatches(matchesData ?? []);
+
+      // If match param present, fetch that match and pre-fill
+      if (matchParam) {
+        const { data: matchData } = await db.from("matches").select("*").eq("id", matchParam).single();
+        if (matchData) {
+          setPlayer1Id(matchData.player1_id || "");
+          setPlayer2Id(matchData.player2_id || "");
+          setSurface(matchData.surface || "Hard");
+          setSelectedMatchId(matchData.id);
+          setActiveTab("new");
+        }
+      }
     }
     loadData();
-  }, []);
+  }, [matchParam]);
 
   async function runAnalysis() {
     if (!player1Id || !player2Id || player1Id === player2Id) return;
@@ -52,7 +69,7 @@ export default function AnalysisPage() {
       const res = await fetch("/api/analysis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ player1_id: player1Id, player2_id: player2Id, surface }),
+        body: JSON.stringify({ player1_id: player1Id, player2_id: player2Id, surface, match_id: selectedMatchId }),
       });
       const data = await res.json();
       setResult(data);
@@ -129,6 +146,25 @@ export default function AnalysisPage() {
 
       {activeTab === "new" ? (
         <>
+          {/* Selected Match Banner */}
+          {selectedMatchId && (() => {
+            const selMatch = matches.find((m) => m.id === selectedMatchId);
+            const p1 = players.find((p) => p.id === selMatch?.player1_id);
+            const p2 = players.find((p) => p.id === selMatch?.player2_id);
+            return selMatch ? (
+              <div className="ace-glass p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  <div>
+                    <p className="text-sm font-medium">{p1?.name} vs {p2?.name}</p>
+                    <p className="text-xs text-muted-foreground/50">{selMatch.tourney_name} · {selMatch.surface} · {selMatch.tourney_date}</p>
+                  </div>
+                </div>
+                <button onClick={() => { setSelectedMatchId(null); setPlayer1Id(""); setPlayer2Id(""); setSurface("Hard"); }} className="text-xs text-muted-foreground/50 hover:text-primary transition-colors">Clear</button>
+              </div>
+            ) : null;
+          })()}
+
           {/* Player Selection */}
           <div className="glass p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -288,5 +324,13 @@ export default function AnalysisPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AnalysisPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh]"><div className="w-12 h-12 rounded-2xl border-2 border-primary/30 border-t-primary animate-spin" /></div>}>
+      <AnalysisContent />
+    </Suspense>
   );
 }
