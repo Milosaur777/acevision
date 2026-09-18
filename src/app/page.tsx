@@ -175,7 +175,6 @@ function MiniLineChart({ data }: { data: number[] }) {
 export default function HomePage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
-  const [recentMatches, setRecentMatches] = useState<Match[]>([]);
   const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [accuracy, setAccuracy] = useState({ accuracy: 0, total_resolved: 0, total_predictions: 0, chart_data: [] as number[], correct_count: 0, message: "" });
@@ -187,11 +186,10 @@ export default function HomePage() {
     async function loadData() {
       const db = getSupabase();
       const today = new Date().toISOString().split("T")[0];
-      const [countRes, matchCountRes, predictionsRes, matchesRes, upcomingRes, accuracyRes] = await Promise.all([
+      const [countRes, matchCountRes, predictionsRes, upcomingRes, accuracyRes] = await Promise.all([
         db.from("players").select("*", { count: "exact", head: true }),
         db.from("matches").select("*", { count: "exact", head: true }),
         db.from("predictions").select("*").order("created_at", { ascending: false }).limit(20),
-        db.from("matches").select("*").order("tourney_date", { ascending: false }).limit(10),
         db.from("matches").select("*").is("winner_id", null).gte("tourney_date", today).order("tourney_date", { ascending: true }).limit(10),
         fetch("/api/accuracy").then(r => r.json()).catch(() => ({ accuracy: 0, total_resolved: 0, chart_data: [], message: "Unavailable" })),
       ]);
@@ -204,7 +202,6 @@ export default function HomePage() {
       setTotalMatches(matchCountRes.count ?? 0);
       setPlayers(playersRes.data ?? []);
       setPredictions(predictionsRes.data ?? []);
-      setRecentMatches(matchesRes.data ?? []);
       setUpcomingMatches(upcomingRes.data ?? []);
       setAccuracy(accuracyRes);
       setLoading(false);
@@ -355,86 +352,54 @@ export default function HomePage() {
 
         {/* Right Column */}
         <div className="space-y-4">
-          {/* Recent Matches */}
+          {/* Past Predictions */}
           <div className="glass">
             <div className="px-5 py-4 border-b border-white/[0.04] flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Trophy className="h-4 w-4 text-primary/60" />
-                <h2 className="font-semibold text-sm">Recent Matches</h2>
+                <Brain className="h-4 w-4 text-primary/60" />
+                <h2 className="font-semibold text-sm">Past Predictions</h2>
               </div>
               <Link href="/analysis" className="text-[10px] text-primary/60 font-medium uppercase tracking-wider hover:text-primary transition-colors">View all →</Link>
             </div>
             <div className="px-4 py-2 space-y-1">
-              {recentMatches.length === 0 ? (
+              {predictions.length === 0 ? (
                 <div className="py-8 text-center">
-                  <p className="text-muted-foreground text-sm">No matches yet</p>
+                  <p className="text-muted-foreground text-sm">No predictions yet</p>
                 </div>
               ) : (
-                recentMatches.slice(0, 5).map((match) => (
-                  <Link
-                    key={match.id}
-                    href={`/analysis?match=${match.id}`}
-                    className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors group"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate font-mono group-hover:text-primary/80 transition-colors">{match.score || "vs"}</p>
-                      <p className="text-xs text-muted-foreground/50 mt-0.5">
-                        {match.tourney_name || "Unknown"} · {match.surface || "—"}
-                      </p>
-                    </div>
-                    <span className="text-[11px] text-muted-foreground/40 shrink-0 ml-3 font-mono">
-                      {match.tourney_date?.slice(0, 4) || "—"}
-                    </span>
-                  </Link>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Upcoming Matches */}
-          <div className="glass">
-            <div className="px-5 py-4 border-b border-white/[0.04] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-primary/60" />
-                <h2 className="font-semibold text-sm">Upcoming Matches</h2>
-              </div>
-              <Link href="/analysis" className="text-[10px] text-primary/60 font-medium uppercase tracking-wider hover:text-primary transition-colors">Predict now →</Link>
-            </div>
-            <div className="px-4 py-2 space-y-1">
-              {upcomingMatches.length === 0 ? (
-                <div className="py-8 text-center">
-                  <p className="text-muted-foreground text-sm">No upcoming matches scanned</p>
-                  <Link href="/import" className="text-primary text-xs hover:underline mt-1 inline-block">Scan matches to get started</Link>
-                </div>
-              ) : (
-                upcomingMatches.map((match) => {
-                  const p1 = players.find((p) => p.id === match.player1_id);
-                  const p2 = players.find((p) => p.id === match.player2_id);
+                predictions.slice(0, 5).map((pred) => {
+                  const isMatchPrediction = pred.match_id !== null;
+                  const p1 = players.find((p) => p.id === pred.player1_id);
+                  const p2 = players.find((p) => p.id === pred.player2_id);
+                  const winner = players.find((p) => p.id === pred.predicted_winner_id);
                   return (
-                    <Link
-                      key={match.id}
-                      href={`/analysis?match=${match.id}`}
-                      className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors group"
+                    <div
+                      key={pred.id}
+                      className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors"
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate group-hover:text-primary/80 transition-colors">
-                          {p1?.name || match.player1_id} vs {p2?.name || match.player2_id}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium truncate">
+                            {p1?.name || "?"} vs {p2?.name || "?"}
+                          </span>
+                          {isMatchPrediction ? (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary/70 font-medium">Match</span>
+                          ) : (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.04] text-muted-foreground/40 font-medium">Fun</span>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground/50 mt-0.5">
-                          {match.tourney_name || "Unknown"} · {match.surface || "—"}
+                          Predicted: {winner?.name || "Unknown"} · {Math.round((pred.confidence || 0) * 100)}% confidence
                         </p>
                       </div>
-                      <span className="text-[11px] text-muted-foreground/40 shrink-0 ml-3 font-mono">
-                        {match.tourney_date?.slice(5) || "—"}
-                      </span>
-                    </Link>
+                    </div>
                   );
                 })
               )}
             </div>
           </div>
 
-          {/* Prediction Accuracy Chart */}
+          {/* Prediction Confidence */}
           <div className="glass p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -481,47 +446,43 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Past Predictions */}
+          {/* Upcoming Matches */}
           <div className="glass">
             <div className="px-5 py-4 border-b border-white/[0.04] flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Brain className="h-4 w-4 text-primary/60" />
-                <h2 className="font-semibold text-sm">Past Predictions</h2>
+                <Calendar className="h-4 w-4 text-primary/60" />
+                <h2 className="font-semibold text-sm">Upcoming Matches</h2>
               </div>
-              <Link href="/analysis" className="text-[10px] text-primary/60 font-medium uppercase tracking-wider hover:text-primary transition-colors">View all →</Link>
+              <Link href="/analysis" className="text-[10px] text-primary/60 font-medium uppercase tracking-wider hover:text-primary transition-colors">Predict now →</Link>
             </div>
             <div className="px-4 py-2 space-y-1">
-              {predictions.length === 0 ? (
+              {upcomingMatches.length === 0 ? (
                 <div className="py-8 text-center">
-                  <p className="text-muted-foreground text-sm">No predictions yet</p>
+                  <p className="text-muted-foreground text-sm">No upcoming matches scanned</p>
+                  <Link href="/import" className="text-primary text-xs hover:underline mt-1 inline-block">Scan matches to get started</Link>
                 </div>
               ) : (
-                predictions.slice(0, 5).map((pred) => {
-                  const isMatchPrediction = pred.match_id !== null;
-                  const p1 = players.find((p) => p.id === pred.player1_id);
-                  const p2 = players.find((p) => p.id === pred.player2_id);
-                  const winner = players.find((p) => p.id === pred.predicted_winner_id);
+                upcomingMatches.map((match) => {
+                  const p1 = players.find((p) => p.id === match.player1_id);
+                  const p2 = players.find((p) => p.id === match.player2_id);
                   return (
-                    <div
-                      key={pred.id}
-                      className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors"
+                    <Link
+                      key={match.id}
+                      href={`/analysis?match=${match.id}`}
+                      className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors group"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium truncate">
-                            {p1?.name || "?"} vs {p2?.name || "?"}
-                          </span>
-                          {isMatchPrediction ? (
-                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary/70 font-medium">Match</span>
-                          ) : (
-                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.04] text-muted-foreground/40 font-medium">Fun</span>
-                          )}
-                        </div>
+                        <p className="text-sm font-medium truncate group-hover:text-primary/80 transition-colors">
+                          {p1?.name || match.player1_id} vs {p2?.name || match.player2_id}
+                        </p>
                         <p className="text-xs text-muted-foreground/50 mt-0.5">
-                          Predicted: {winner?.name || "Unknown"} · {Math.round((pred.confidence || 0) * 100)}% confidence
+                          {match.tourney_name || "Unknown"} · {match.surface || "—"}
                         </p>
                       </div>
-                    </div>
+                      <span className="text-[11px] text-muted-foreground/40 shrink-0 ml-3 font-mono">
+                        {match.tourney_date?.slice(5) || "—"}
+                      </span>
+                    </Link>
                   );
                 })
               )}
