@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { getSupabase } from "@/lib/supabase/client";
 import type { Player, Prediction, Match } from "@/types/tennis";
 import { Zap, Target, TrendingUp, Swords, Brain, Trash2, CheckCircle2, XCircle, Clock, Filter, Calendar } from "lucide-react";
@@ -24,10 +25,14 @@ function AnalysisContent() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
+  const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([]);
   const [player1Id, setPlayer1Id] = useState("");
   const [player2Id, setPlayer2Id] = useState("");
   const [surface, setSurface] = useState("Hard");
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
+  const [isMatch, setIsMatch] = useState(false);
+  const [matchDate, setMatchDate] = useState("");
+  const [matchTourney, setMatchTourney] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [activeTab, setActiveTab] = useState<"new" | "history">("new");
@@ -37,14 +42,17 @@ function AnalysisContent() {
   useEffect(() => {
     async function loadData() {
       const db = getSupabase();
-      const [{ data: playersData }, { data: predictionsData }, { data: matchesData }] = await Promise.all([
+      const today = new Date().toISOString().split("T")[0];
+      const [{ data: playersData }, { data: predictionsData }, { data: matchesData }, { data: upcomingData }] = await Promise.all([
         db.from("players").select("*").order("name"),
         db.from("predictions").select("*").order("created_at", { ascending: false }),
         db.from("matches").select("*").not("winner_id", "is", null),
+        db.from("matches").select("*").is("winner_id", null).gte("tourney_date", today).order("tourney_date", { ascending: true }).limit(20),
       ]);
       setPlayers(playersData ?? []);
       setPredictions(predictionsData ?? []);
       setMatches(matchesData ?? []);
+      setUpcomingMatches(upcomingData ?? []);
 
       // If match param present, fetch that match and pre-fill
       if (matchParam) {
@@ -54,6 +62,7 @@ function AnalysisContent() {
           setPlayer2Id(matchData.player2_id || "");
           setSurface(matchData.surface || "Hard");
           setSelectedMatchId(matchData.id);
+          setIsMatch(true);
           setActiveTab("new");
         }
       }
@@ -66,10 +75,32 @@ function AnalysisContent() {
     setLoading(true);
     setResult(null);
     try {
+      // If "real match" is checked and no existing match selected, create one first
+      let matchId = selectedMatchId;
+      if (isMatch && !matchId && matchDate) {
+        const db = getSupabase();
+        const { data: newMatch, error: matchError } = await db.from("matches").insert({
+          id: `manual-${Date.now()}`,
+          player1_id: player1Id,
+          player2_id: player2Id,
+          surface,
+          tourney_date: matchDate,
+          tourney_name: matchTourney || "Manual Prediction",
+          round: "Custom",
+          score: "",
+          winner_id: null,
+        }).select().single();
+        if (!matchError && newMatch) {
+          matchId = newMatch.id;
+          // Add to local matches state
+          setMatches((prev) => [newMatch, ...prev]);
+        }
+      }
+
       const res = await fetch("/api/analysis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ player1_id: player1Id, player2_id: player2Id, surface, match_id: selectedMatchId }),
+        body: JSON.stringify({ player1_id: player1Id, player2_id: player2Id, surface, match_id: matchId }),
       });
       const data = await res.json();
       setResult(data);
@@ -193,6 +224,43 @@ function AnalysisContent() {
                   <option value="Indoor">Indoor</option>
                 </select>
               </div>
+              {!selectedMatchId && (
+                <>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <input
+                      type="checkbox"
+                      id="isMatch"
+                      checked={isMatch}
+                      onChange={(e) => setIsMatch(e.target.checked)}
+                      className="w-4 h-4 rounded border-white/20 bg-white/[0.04] text-primary focus:ring-primary/30"
+                    />
+                    <label htmlFor="isMatch" className="text-xs text-muted-foreground/60 cursor-pointer">Real match</label>
+                  </div>
+                  {isMatch && (
+                    <>
+                      <div>
+                        <label className="text-xs text-muted-foreground/60 mb-1.5 block uppercase tracking-wider">Match date</label>
+                        <input
+                          type="date"
+                          value={matchDate}
+                          onChange={(e) => setMatchDate(e.target.value)}
+                          className={inputCls + " w-auto"}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground/60 mb-1.5 block uppercase tracking-wider">Tournament</label>
+                        <input
+                          type="text"
+                          value={matchTourney}
+                          onChange={(e) => setMatchTourney(e.target.value)}
+                          placeholder="e.g. Australian Open"
+                          className={inputCls + " w-auto"}
+                        />
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
               <button onClick={runAnalysis}
                 disabled={!player1Id || !player2Id || player1Id === player2Id || loading}
                 className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:shadow-[0_0_20px_rgba(163,230,53,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
@@ -245,6 +313,51 @@ function AnalysisContent() {
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">{result.tactics_player2}</p>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Upcoming Matches */}
+          {upcomingMatches.length > 0 && (
+            <div className="glass">
+              <div className="px-5 py-4 border-b border-white/[0.04] flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary/60" />
+                  <h2 className="font-semibold text-sm">Upcoming Matches</h2>
+                </div>
+                <Link href="/import" className="text-[10px] text-primary/60 font-medium uppercase tracking-wider hover:text-primary transition-colors">Scan more →</Link>
+              </div>
+              <div className="px-4 py-2 space-y-1">
+                {upcomingMatches.slice(0, 10).map((match) => {
+                  const p1 = players.find((p) => p.id === match.player1_id);
+                  const p2 = players.find((p) => p.id === match.player2_id);
+                  return (
+                    <button
+                      key={match.id}
+                      onClick={() => {
+                        setPlayer1Id(match.player1_id || "");
+                        setPlayer2Id(match.player2_id || "");
+                        setSurface(match.surface || "Hard");
+                        setSelectedMatchId(match.id);
+                        setIsMatch(true);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors group text-left"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate group-hover:text-primary/80 transition-colors">
+                          {p1?.name || match.player1_id} vs {p2?.name || match.player2_id}
+                        </p>
+                        <p className="text-xs text-muted-foreground/50 mt-0.5">
+                          {match.tourney_name || "Unknown"} · {match.surface || "—"}
+                        </p>
+                      </div>
+                      <span className="text-[11px] text-muted-foreground/40 shrink-0 ml-3 font-mono">
+                        {match.tourney_date?.slice(5) || "—"}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
