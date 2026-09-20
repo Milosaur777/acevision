@@ -6,160 +6,97 @@ const API_HOST = "tennis-api-atp-wta-itf.p.rapidapi.com";
 
 export const dynamic = "force-dynamic";
 
+async function fetchFixtures(tour: string, date: string) {
+  const url = `https://${API_HOST}/tennis/v2/${tour}/fixtures/${date}/${date}`;
+  const res = await fetch(url, {
+    headers: { "X-RapidAPI-Key": RAPIDAPI_KEY!, "X-RapidAPI-Host": API_HOST },
+  });
+  if (!res.ok) return [];
+  const d = await res.json();
+  return d.data || d.results || d || [];
+}
+
 export async function GET() {
   if (!RAPIDAPI_KEY) {
-    return NextResponse.json(
-      { error: "RAPIDAPI_KEY not configured" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "RAPIDAPI_KEY not configured" }, { status: 500 });
   }
 
   const supabase = getSupabaseServer();
-  const today = new Date().toISOString().split("T")[0];
+  const now = new Date();
+  const today = now.toISOString().split("T")[0];
+  const yesterday = new Date(now.setDate(now.getDate() - 1)).toISOString().split("T")[0];
 
   try {
-    // 1. Find all pending matches (winner_id IS NULL, date <= today)
-    const { data: pendingMatches, error: fetchError } = await supabase
-      .from("matches")
-      .select("*")
+    const { data: pending, error } = await supabase
+      .from("matches").select("*")
       .is("winner_id", null)
-      .lte("tourney_date", today)
-      .order("tourney_date", { ascending: true })
-      .limit(200);
+      .in("tourney_date", [today, yesterday])
+      .limit(100);
 
-    if (fetchError) {
-      return NextResponse.json({ error: fetchError.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!pending?.length) {
+      return NextResponse.json({ message: "No pending matches for today or yesterday", checked: 0, updated: 0, details: [] });
     }
 
-    if (!pendingMatches || pendingMatches.length === 0) {
-      return NextResponse.json({
-        message: "No pending matches to check",
-        checked: 0,
-        updated: 0,
-        details: [],
-      });
-    }
-
-    // 2. Get all players for name matching
-    const { data: players } = await supabase
-      .from("players")
-      .select("id, name");
-
-    const playerMap = new Map<string, { id: string; name: string }>();
+    const { data: players } = await supabase.from("players").select("id, name");
+    const pMap = new Map<string, { id: string; name: string }>();
     players?.forEach((p) => {
-      playerMap.set(p.name.toLowerCase(), { id: p.id, name: p.name });
-      const lastName = p.name.split(" ").pop()?.toLowerCase();
-      if (lastName) playerMap.set(lastName, { id: p.id, name: p.name });
+      pMap.set(p.name.toLowerCase(), { id: p.id, name: p.name });
+      const last = p.name.split(" ").pop()?.toLowerCase();
+      if (last) pMap.set(last, { id: p.id, name: p.name });
     });
 
-    // 3. Group pending matches by date to minimize API calls
-    const dateGroups = new Map<string, typeof pendingMatches>();
-    pendingMatches.forEach((m) => {
-      const date = m.tourney_date;
-      if (!dateGroups.has(date)) dateGroups.set(date, []);
-      dateGroups.get(date)!.push(m);
-    });
+    // Fetch today + yesterday, ATP + WTA (4 calls max)
+    const fixtures: any[] = [];
+    for (const d of [today, yesterday]) {
+      for (const t of ["atp", "wta"]) {
+        try { fixtures.push(...await fetchFixtures(t, d)); } catch {}
+      }
+    }
 
-    let updatedCount = 0;
+    let updated = 0;
     const details: { match: string; status: string }[] = [];
-    const apiCalls: string[] = [];
 
-    // 4. For each date, fetch fixtures and match
-    for (const [date, matches] of dateGroups) {
-      try {
-        // Fetch fixtures for this date (past or today)
-        const apiUrl = `https://${API_HOST}/tennis/v2/atp/fixtures/${date}/${date}`;
-        apiCalls.push(date);
+    for (const f of fixtures) {
+      const fP1 = f.player1?.name || "";
+      const fP2 = f.player2?.name || "";
+      const score = f.live || f.score || "";
+      const fDate = f.date ? f.date.split("T")[0] : "";
+      if (!fP1 || !fP2 || !score) continue;
 
-        const res = await fetch(apiUrl, {
-          method: "GET",
-          headers: {
-            "X-RapidAPI-Key": RAPIDAPI_KEY,
-            "X-RapidAPI-Host": API_HOST,
-          },
-        });
+      const fP1Last = fP1.split(" ").pop()?.toLowerCase() || "";
+      const fP2Last = fP2.split(" ").pop()?.toLowerCase() || "";
 
-        if (!res.ok) {
-          details.push({ match: `Date ${date}`, status: `API error ${res.status}` });
-          continue;
-        }
+      const match = pending.find((pm) => {
+        const pmP1Last = (pMap.get(pm.player1_id)?.name || "").split(" ").pop()?.toLowerCase() || "";
+        const pmP2Last = (pMap.get(pm.player2_id)?.name || "").split(" ").pop()?.toLowerCase() || "";
+        if (pm.tourney_date !== fDate) return false;
+        return (fP1Last === pmP1Last && fP2Last === pmP2Last) ||
+               (fP1Last === pmP2Last && fP2Last === pmP1Last);
+      });
 
-        const apiData = await res.json();
-        const fixtures = apiData.data || apiData.results || apiData || [];
+      if (!match) continue;
 
-        // 5. For each fixture, try to match against pending matches
-        for (const fixture of fixtures) {
-          const apiP1Name = fixture.player1?.name?.toLowerCase() || "";
-          const apiP2Name = fixture.player2?.name?.toLowerCase() || "";
-          const score = fixture.live || fixture.score || "";
-          const fixtureDate = fixture.date ? fixture.date.split("T")[0] : date;
+      const winnerName = f.player1?.name?.toLowerCase() || "";
+      const winner = pMap.get(winnerName) || pMap.get(winnerName.split(" ").pop() || "");
+      if (!winner) continue;
 
-          if (!apiP1Name || !apiP2Name) continue;
+      const { error: updErr } = await supabase
+        .from("matches").update({ winner_id: winner.id, score }).eq("id", match.id);
 
-          // Find matching pending match
-          const matchedMatch = matches.find((pm) => {
-            const pmP1 = playerMap.get(pm.player1_id)?.name?.toLowerCase() || "";
-            const pmP2 = playerMap.get(pm.player2_id)?.name?.toLowerCase() || "";
-
-            // Check if player names match (either order)
-            const namesMatch =
-              (apiP1Name.includes(pmP1.split(" ").pop() || "") && apiP2Name.includes(pmP2.split(" ").pop() || "")) ||
-              (apiP1Name.includes(pmP2.split(" ").pop() || "") && apiP2Name.includes(pmP1.split(" ").pop() || ""));
-
-            return namesMatch && pm.tourney_date === fixtureDate;
-          });
-
-          if (matchedMatch && score) {
-            // Determine winner from API — player1 is winner in results
-            const apiWinnerName = fixture.player1?.name?.toLowerCase() || "";
-            const winnerPlayer = playerMap.get(apiWinnerName) ||
-              playerMap.get(apiWinnerName.split(" ").pop() || "");
-
-            if (winnerPlayer) {
-              // Update the match
-              const { error: updateError } = await supabase
-                .from("matches")
-                .update({
-                  winner_id: winnerPlayer.id,
-                  score: score,
-                })
-                .eq("id", matchedMatch.id);
-
-              if (!updateError) {
-                updatedCount++;
-                const p1Name = playerMap.get(matchedMatch.player1_id)?.name || "?";
-                const p2Name = playerMap.get(matchedMatch.player2_id)?.name || "?";
-                details.push({
-                  match: `${p1Name} vs ${p2Name}`,
-                  status: `Updated — Winner: ${winnerPlayer.name} (${score})`,
-                });
-              } else {
-                details.push({
-                  match: `Match ${matchedMatch.id}`,
-                  status: `Update error: ${updateError.message}`,
-                });
-              }
-            }
-          }
-        }
-      } catch (e) {
-        details.push({ match: `Date ${date}`, status: `Fetch error: ${e}` });
+      if (!updErr) {
+        updated++;
+        const n1 = pMap.get(match.player1_id)?.name || "?";
+        const n2 = pMap.get(match.player2_id)?.name || "?";
+        details.push({ match: `${n1} vs ${n2}`, status: `Winner: ${winner.name} (${score})` });
       }
     }
 
     return NextResponse.json({
-      message: updatedCount > 0
-        ? `${updatedCount} match${updatedCount > 1 ? "es" : ""} updated with results`
-        : "No new results found",
-      checked: pendingMatches.length,
-      updated: updatedCount,
-      api_calls: apiCalls.length,
-      details,
+      message: updated > 0 ? `${updated} match${updated > 1 ? "es" : ""} updated` : "No new results found",
+      checked: pending.length, updated, details,
     });
   } catch (e) {
-    return NextResponse.json(
-      { error: `Unexpected error: ${e}` },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: `${e}` }, { status: 500 });
   }
 }
