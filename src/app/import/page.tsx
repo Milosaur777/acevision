@@ -26,6 +26,8 @@ export default function ImportPage() {
   const [scanResult, setScanResult] = useState<{ message: string; new: number; skipped: number; created_players: number; details: { match: string; status: string }[] } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshResult, setRefreshResult] = useState<{ message: string; updated: number; inserted: number; skipped: number; details: { match: string; status: string }[] } | null>(null);
+  const [checkingResults, setCheckingResults] = useState(false);
+  const [checkResultsData, setCheckResultsData] = useState<{ message: string; checked: number; updated: number; details: { match: string; status: string }[] } | null>(null);
 
   useEffect(() => {
     async function loadMatches() {
@@ -134,6 +136,20 @@ export default function ImportPage() {
       setRefreshResult({ message: "Refresh failed", updated: 0, inserted: 0, skipped: 0, details: [] });
     } finally {
       setRefreshing(false);
+    }
+  }
+
+  async function checkResults() {
+    setCheckingResults(true);
+    setCheckResultsData(null);
+    try {
+      const res = await fetch("/api/check-results");
+      const data = await res.json();
+      setCheckResultsData(data);
+    } catch {
+      setCheckResultsData({ message: "Check failed", checked: 0, updated: 0, details: [] });
+    } finally {
+      setCheckingResults(false);
     }
   }
 
@@ -259,6 +275,61 @@ export default function ImportPage() {
                 ))}
                 {refreshResult.details.length > 10 && (
                   <p className="text-xs text-muted-foreground/40 text-center">+{refreshResult.details.length - 10} more</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Check Match Results */}
+      <div className="glass p-6">
+        <div className="flex items-center gap-2 mb-3">
+          <Trophy className="h-5 w-5 text-primary" />
+          <h2 className="font-semibold">Check Match Results</h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Automatically check pending matches for results. Updates winner and score when matches have finished.
+        </p>
+        <button
+          onClick={checkResults}
+          disabled={checkingResults}
+          className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:shadow-[0_0_20px_rgba(163,230,53,0.3)] transition-all disabled:opacity-50 flex items-center gap-2"
+        >
+          {checkingResults ? (
+            <><RefreshCw className="h-4 w-4 animate-spin" /> Checking...</>
+          ) : (
+            <><Trophy className="h-4 w-4" /> Check Results</>
+          )}
+        </button>
+
+        {checkResultsData && (
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center gap-2">
+              {checkResultsData.updated > 0 ? (
+                <Check className="h-4 w-4 text-primary" />
+              ) : (
+                <Check className="h-4 w-4 text-muted-foreground" />
+              )}
+              <span className="text-sm font-medium">{checkResultsData.message}</span>
+            </div>
+            {checkResultsData.checked > 0 && (
+              <p className="text-xs text-muted-foreground/50">
+                Checked {checkResultsData.checked} pending match{checkResultsData.checked !== 1 ? "es" : ""}
+              </p>
+            )}
+            {checkResultsData.details && checkResultsData.details.length > 0 && (
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {checkResultsData.details.slice(0, 10).map((d, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs px-2 py-1 rounded bg-white/[0.02]">
+                    <span className="text-muted-foreground truncate">{d.match}</span>
+                    <span className={d.status.includes("Updated") ? "text-primary" : "text-muted-foreground/50"}>
+                      {d.status}
+                    </span>
+                  </div>
+                ))}
+                {checkResultsData.details.length > 10 && (
+                  <p className="text-xs text-muted-foreground/40 text-center">+{checkResultsData.details.length - 10} more</p>
                 )}
               </div>
             )}
