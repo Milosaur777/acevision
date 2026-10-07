@@ -38,6 +38,8 @@ function AnalysisContent() {
   const [activeTab, setActiveTab] = useState<"new" | "history">("new");
   const [filter, setFilter] = useState<FilterType>("all");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [resolvingPredId, setResolvingPredId] = useState<string | null>(null);
+  const [resolvingWinnerId, setResolvingWinnerId] = useState("");
 
   useEffect(() => {
     async function loadData() {
@@ -129,6 +131,24 @@ function AnalysisContent() {
       setDeleteConfirm(null);
     } catch (error) {
       console.error("Failed to delete prediction:", error);
+    }
+  }
+
+  async function setMatchResult(predId: string, winnerId: string) {
+    const pred = predictions.find((p) => p.id === predId);
+    if (!pred?.match_id) return;
+    try {
+      await fetch(`/api/matches/${pred.match_id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ winner_id: winnerId }),
+      });
+      // Update local state
+      setMatches(matches.map((m) => m.id === pred.match_id ? { ...m, winner_id: winnerId } : m));
+      setResolvingPredId(null);
+      setResolvingWinnerId("");
+    } catch (error) {
+      console.error("Failed to set match result:", error);
     }
   }
 
@@ -399,37 +419,63 @@ function AnalysisContent() {
                 const winner = players.find((p) => p.id === pred.predicted_winner_id);
                 const status = getPredictionStatus(pred);
                 const isDeleting = deleteConfirm === pred.id;
+                const isResolving = resolvingPredId === pred.id;
+                const isPending = pred.match_id && status.label === "Pending";
 
                 return (
-                  <div key={pred.id} className="flex items-center justify-between px-3 py-3 rounded-lg hover:bg-white/[0.03] transition-colors group">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium">{p1?.name || "?"} vs {p2?.name || "?"}</span>
-                        <span className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded ${status.color} bg-white/[0.04]`}>
-                          {status.icon}
-                          {status.label}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground/50 mt-1">
-                        Predicted: {winner?.name || "Unknown"} · {Math.round((pred.confidence || 0) * 100)}% confidence · {new Date(pred.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {isDeleting ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-muted-foreground">Delete?</span>
-                          <button onClick={() => deletePrediction(pred.id)} className="text-[10px] px-2 py-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors">Yes</button>
-                          <button onClick={() => setDeleteConfirm(null)} className="text-[10px] px-2 py-1 rounded bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08] transition-colors">No</button>
+                  <div key={pred.id} className="px-3 py-3 rounded-lg hover:bg-white/[0.03] transition-colors group">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium">{p1?.name || "?"} vs {p2?.name || "?"}</span>
+                          <span className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded ${status.color} bg-white/[0.04]`}>
+                            {status.icon}
+                            {status.label}
+                          </span>
                         </div>
-                      ) : (
-                        <button
-                          onClick={() => setDeleteConfirm(pred.id)}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-all"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      )}
+                        <p className="text-xs text-muted-foreground/50 mt-1">
+                          Predicted: {winner?.name || "Unknown"} · {Math.round((pred.confidence || 0) * 100)}% confidence · {new Date(pred.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isPending && (
+                          <button
+                            onClick={() => { setResolvingPredId(isResolving ? null : pred.id); setResolvingWinnerId(""); }}
+                            className="text-[10px] px-2 py-1 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                          >
+                            Set Result
+                          </button>
+                        )}
+                        {isDeleting ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-muted-foreground">Delete?</span>
+                            <button onClick={() => deletePrediction(pred.id)} className="text-[10px] px-2 py-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors">Yes</button>
+                            <button onClick={() => setDeleteConfirm(null)} className="text-[10px] px-2 py-1 rounded bg-white/[0.04] text-muted-foreground hover:bg-white/[0.08] transition-colors">No</button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setDeleteConfirm(pred.id)}
+                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-all"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
+                    {isResolving && (
+                      <div className="mt-2 flex items-center gap-2 flex-wrap">
+                        <span className="text-[10px] text-muted-foreground">Who won?</span>
+                        {[p1, p2].filter(Boolean).map((p) => (
+                          <button
+                            key={p!.id}
+                            onClick={() => setMatchResult(pred.id, p!.id)}
+                            className="text-[10px] px-2.5 py-1 rounded bg-white/[0.06] hover:bg-primary/20 hover:text-primary transition-colors"
+                          >
+                            {p!.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })
