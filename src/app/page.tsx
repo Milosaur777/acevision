@@ -185,12 +185,11 @@ export default function HomePage() {
   useEffect(() => {
     async function loadData() {
       const db = getSupabase();
-      const today = new Date().toISOString().split("T")[0];
       const [countRes, matchCountRes, predictionsRes, upcomingRes, accuracyRes] = await Promise.all([
         db.from("players").select("*", { count: "exact", head: true }),
         db.from("matches").select("*", { count: "exact", head: true }),
         db.from("predictions").select("*").order("created_at", { ascending: false }).limit(20),
-        db.from("matches").select("*").is("winner_id", null).gte("tourney_date", today).order("tourney_date", { ascending: true }).limit(5),
+        db.from("matches").select("*").is("winner_id", null).order("tourney_date", { ascending: true }).limit(5),
         fetch("/api/accuracy").then(r => r.json()).catch(() => ({ accuracy: 0, total_resolved: 0, chart_data: [], message: "Unavailable" })),
       ]);
       // Load all players for name resolution in predictions

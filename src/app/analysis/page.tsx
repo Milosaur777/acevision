@@ -42,12 +42,11 @@ function AnalysisContent() {
   useEffect(() => {
     async function loadData() {
       const db = getSupabase();
-      const today = new Date().toISOString().split("T")[0];
       const [{ data: playersData }, { data: predictionsData }, { data: matchesData }, { data: upcomingData }] = await Promise.all([
         db.from("players").select("*").order("name"),
         db.from("predictions").select("*").order("created_at", { ascending: false }),
         db.from("matches").select("*").not("winner_id", "is", null),
-        db.from("matches").select("*").is("winner_id", null).gte("tourney_date", today).order("tourney_date", { ascending: true }).limit(20),
+        db.from("matches").select("*").is("winner_id", null).order("tourney_date", { ascending: true }).limit(30),
       ]);
       setPlayers(playersData ?? []);
       setPredictions(predictionsData ?? []);
@@ -319,18 +318,18 @@ function AnalysisContent() {
             </div>
           )}
 
-          {/* Upcoming Matches */}
+          {/* Pending Matches */}
           {upcomingMatches.length > 0 && (
             <div className="glass">
               <div className="px-5 py-4 border-b border-white/[0.04] flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-primary/60" />
-                  <h2 className="font-semibold text-sm">Upcoming Matches</h2>
+                  <h2 className="font-semibold text-sm">Matches to Analyze</h2>
                 </div>
                 <Link href="/import" className="text-[10px] text-primary/60 font-medium uppercase tracking-wider hover:text-primary transition-colors">Scan more →</Link>
               </div>
               <div className="px-4 py-2 space-y-1">
-                {upcomingMatches.slice(0, 10).map((match) => {
+                {upcomingMatches.slice(0, 15).map((match) => {
                   const p1 = players.find((p) => p.id === match.player1_id);
                   const p2 = players.find((p) => p.id === match.player2_id);
                   return (
