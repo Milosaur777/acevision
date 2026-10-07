@@ -22,20 +22,17 @@ export async function GET() {
   }
 
   const supabase = getSupabaseServer();
-  const now = new Date();
-  const today = now.toISOString().split("T")[0];
-  const yesterday = new Date(now.setDate(now.getDate() - 1)).toISOString().split("T")[0];
 
   try {
+    // Query ALL pending matches regardless of date
     const { data: pending, error } = await supabase
       .from("matches").select("*")
       .is("winner_id", null)
-      .in("tourney_date", [today, yesterday])
-      .limit(100);
+      .limit(200);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     if (!pending?.length) {
-      return NextResponse.json({ message: "No pending matches for today or yesterday", checked: 0, updated: 0, details: [] });
+      return NextResponse.json({ message: "No pending matches found", checked: 0, updated: 0, details: [] });
     }
 
     const { data: players } = await supabase.from("players").select("id, name");
@@ -46,12 +43,22 @@ export async function GET() {
       if (last) pMap.set(last, { id: p.id, name: p.name });
     });
 
-    // Fetch today + yesterday, ATP + WTA (4 calls max)
+    // Group pending matches by unique dates
+    const dates = [...new Set(pending.map((m) => m.tourney_date).filter(Boolean))];
     const fixtures: any[] = [];
-    for (const d of [today, yesterday]) {
+    const skippedDates: string[] = [];
+
+    // Fetch each unique date, ATP + WTA
+    for (const d of dates.slice(0, 20)) { // Cap at 20 unique dates
+      let dateHasData = false;
       for (const t of ["atp", "wta"]) {
-        try { fixtures.push(...await fetchFixtures(t, d)); } catch {}
+        try {
+          const f = await fetchFixtures(t, d);
+          if (f.length > 0) dateHasData = true;
+          fixtures.push(...f);
+        } catch {}
       }
+      if (!dateHasData) skippedDates.push(d);
     }
 
     let updated = 0;
@@ -92,9 +99,16 @@ export async function GET() {
       }
     }
 
+    const msg = updated > 0
+      ? `${updated} match${updated > 1 ? "es" : ""} updated with results`
+      : `No new results yet — checked ${pending.length} pending matches across ${dates.length} date${dates.length > 1 ? "s" : ""}`;
+
     return NextResponse.json({
-      message: updated > 0 ? `${updated} match${updated > 1 ? "es" : ""} updated` : "No new results found",
-      checked: pending.length, updated, details,
+      message: msg,
+      checked: pending.length,
+      updated,
+      dates_checked: dates.length,
+      details,
     });
   } catch (e) {
     return NextResponse.json({ error: `${e}` }, { status: 500 });
